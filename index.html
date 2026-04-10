@@ -1,0 +1,2486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CardsQuest — AI Card Grading</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F4F0;--surf:#fff;--surf2:#F0EEE8;
+  --gold:#C8960C;--gold-l:#F5C518;--gold-d:#9A7000;
+  --ink:#1C1917;--ink2:#57534E;--ink3:#A8A29E;
+  --green:#16A34A;--green-l:#DCFCE7;
+  --red:#DC2626;--red-l:#FEE2E2;
+  --blue:#2563EB;--blue-l:#EFF6FF;
+  --amber-l:#FEF3C7;
+  --border:#E7E5E0;--border2:#D6D3CD;
+  --card-dark:#1B3F6E;
+  --bronze:#CD7F32;--bronze-l:#F4E4D4;--bronze-d:#8B5A1A;
+  --gold-streak:#FFD700;--gold-streak-l:#FFFACD;--gold-streak-d:#B8860B;
+  --plat-accent:#00C8FF;
+}
+body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#fff}
+
+/* ════ CACHE INDICATOR ════ */
+.cache-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;
+  text-transform:uppercase;letter-spacing:.5px;
+}
+.cache-hit{background:#DCFCE7;color:#14532D}
+.cache-miss{background:#DBEAFE;color:#1E3A8A}
+.cache-stats{
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+  font-size:11px;color:var(--ink3);margin-bottom:14px;
+  padding:8px 12px;background:var(--surf2);border-radius:8px;
+}
+.cs-item{display:flex;align-items:center;gap:5px}
+.cs-dot{width:7px;height:7px;border-radius:50%}
+
+/* ════ AUTH ════ */
+.auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;background:#0E0E14;position:relative;overflow:hidden}
+.bg-cards{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.bgc{position:absolute;width:80px;height:110px;border-radius:8px;border:2px solid rgba(212,160,23,0.18);background:rgba(27,63,110,0.25)}
+.bgc1{top:-20px;left:4%;transform:rotate(-15deg);animation:d1 12s ease-in-out infinite}
+.bgc2{top:55%;left:-25px;transform:rotate(10deg);animation:d2 15s ease-in-out infinite}
+.bgc3{top:8%;right:4%;transform:rotate(20deg);animation:d1 10s ease-in-out infinite reverse}
+.bgc4{bottom:-20px;right:7%;transform:rotate(-8deg);animation:d2 18s ease-in-out infinite reverse}
+@keyframes d1{0%,100%{transform:rotate(-15deg) translateY(0)}50%{transform:rotate(-12deg) translateY(-12px)}}
+@keyframes d2{0%,100%{transform:rotate(10deg) translateY(0)}50%{transform:rotate(13deg) translateY(-10px)}}
+.auth-layout{display:flex;gap:44px;align-items:center;justify-content:center;width:100%;max-width:860px;flex-wrap:wrap;position:relative;z-index:1}
+.auth-left{display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0}
+/* ── POKEMON-STYLE LOGO ── */
+.brand{
+  font-family:'Press Start 2P',cursive;
+  font-size:20px;
+  letter-spacing:1px;
+  line-height:1.4;
+  color:#FFD700;
+  -webkit-text-stroke:3.5px #2B5CE6;
+  paint-order:stroke fill;
+  text-shadow:3px 3px 0 #1A3A9E, 0 2px 10px rgba(43,92,230,0.4);
+  filter:drop-shadow(0 2px 8px rgba(43,92,230,0.3));
+}
+.brand span{color:#FFD700;-webkit-text-stroke:3.5px #2B5CE6}
+.brand-sub{font-size:12px;color:rgba(255,255,255,0.35);text-align:center;margin-top:8px;font-family:'Outfit',sans-serif;font-weight:500;-webkit-text-stroke:0;text-shadow:none;filter:none}
+.logo{
+  font-family:'Press Start 2P',cursive;
+  font-size:13px;
+  letter-spacing:.5px;
+  line-height:1.4;
+  color:#FFD700;
+  -webkit-text-stroke:2.5px #2B5CE6;
+  paint-order:stroke fill;
+  text-shadow:2px 2px 0 #1A3A9E;
+}
+.logo span{color:#FFD700;-webkit-text-stroke:2.5px #2B5CE6}
+/* Card shell */
+.pcard-wrap{position:relative}
+.pcard-wrap::before{content:'';position:absolute;inset:12px;border-radius:20px;background:rgba(245,197,24,0.18);filter:blur(18px);z-index:0}
+.pcard{position:relative;z-index:1;width:262px;border-radius:18px;border:2px solid #5C3D00;outline:4px solid #D4A017;outline-offset:-2px;overflow:hidden;background:var(--card-dark);font-family:'Outfit',sans-serif}
+.pcard::after{content:'';position:absolute;inset:7px;border-radius:12px;border:1px solid rgba(255,220,80,0.2);pointer-events:none;z-index:10}
+.pc-banner{background:var(--gold-l);padding:8px 13px 7px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #9A7000}
+.pc-name{font-weight:900;font-size:15px;color:#1a0800;letter-spacing:-0.3px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-hp{font-size:10px;color:rgba(26,8,0,0.5);font-weight:700;white-space:nowrap;margin-left:4px}
+.pc-hp b{font-size:18px;font-weight:900;color:#8B0000;letter-spacing:-1px}
+.pc-stage{background:#E8B820;padding:3px 12px;display:flex;align-items:center;gap:5px;border-bottom:1px solid #9A7000}
+.pc-stage-pill{background:#1a0800;color:var(--gold-l);font-size:8px;font-weight:900;padding:1px 7px;border-radius:10px;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap}
+.pc-stage-sub{font-size:9px;color:rgba(26,8,0,0.5);font-weight:700;text-transform:uppercase;letter-spacing:.3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-art{
+  margin:8px 8px 0;border-radius:9px 9px 0 0;
+  border:3px solid #C89800;border-bottom:none;
+  overflow:hidden;
+  /* Height based on TCG card ratio 63×88mm ≈ 1.397:1 portrait
+     Card inner art zone is roughly the middle 60% of card height.
+     At app-pcard width 280px, inner width ~248px → height = 248 × 0.72 = 225px */
+  height:230px;
+  position:relative;background:#0f2744;cursor:pointer;
+}
+.art-img-layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* TCG card image — fill width, let height be natural (shows full card) */
+.art-img-layer img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:top center; /* show top of card (name banner) */
+}
+/* For official artwork (portrait figure) — contain is better */
+.art-img-layer.contain-art img{
+  object-fit:contain;
+  object-position:center;
+}
+.art-bg-layer{position:absolute;inset:0;background:linear-gradient(180deg,#8EC5E8 0%,#6AAED8 44%,#5A9E48 44%,#3A7828 100%);display:flex;align-items:center;justify-content:center}
+.art-emoji{font-size:60px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));animation:fl 3s ease-in-out infinite}
+@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.art-shine{position:absolute;inset:0;background:linear-gradient(105deg,transparent 38%,rgba(255,255,255,0.1) 50%,transparent 62%);animation:sh 4s ease-in-out infinite;pointer-events:none}
+@keyframes sh{0%,100%{transform:translateX(-120%)}50%{transform:translateX(220%)}}
+
+/* Permanent upload button — always visible strip below art */
+.art-upload-btn{
+  margin:0 8px 6px;
+  background:rgba(245,197,24,0.12);
+  border:1.5px dashed rgba(245,197,24,0.45);
+  border-top:none;
+  border-radius:0 0 9px 9px;
+  padding:7px 10px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;transition:.15s;
+  font-size:11px;font-weight:700;
+  color:rgba(245,197,24,0.7);
+  letter-spacing:.2px;
+}
+.art-upload-btn:hover{
+  background:rgba(245,197,24,0.22);
+  color:var(--gold-l);
+  border-color:var(--gold-l);
+}
+.art-upload-btn svg{flex-shrink:0;opacity:.7}
+.pc-set-info{display:flex;align-items:center;justify-content:space-between;padding:4px 11px;background:rgba(0,0,0,0.25);border-top:1px solid rgba(200,152,0,0.2);border-bottom:1px solid rgba(200,152,0,0.2)}
+.pc-set-name{font-size:8px;color:rgba(255,255,255,0.4);font-weight:600;letter-spacing:.3px}
+.pc-rarity{font-size:8px;color:rgba(200,152,0,0.6);font-weight:700;letter-spacing:.3px}
+.pc-type-strip{display:flex;align-items:center;justify-content:space-between;padding:5px 11px;background:rgba(0,0,0,0.2);border-top:1px solid rgba(200,152,0,0.3);border-bottom:1px solid rgba(200,152,0,0.3)}
+.tbadge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+.pc-move{margin:6px 8px 5px;background:rgba(255,255,255,0.06);border:1px solid rgba(200,152,0,0.28);border-radius:9px;padding:9px 11px}
+.pc-move-lbl{font-size:8px;font-weight:900;letter-spacing:2px;color:rgba(200,152,0,0.75);text-transform:uppercase;margin-bottom:6px}
+.pc-grade-row{display:flex;align-items:flex-end;gap:10px}
+.pc-gnum{font-family:'Playfair Display',serif;font-weight:900;font-size:48px;line-height:1;color:var(--gold-l);text-shadow:0 2px 10px rgba(0,0,0,0.4);letter-spacing:-3px;min-width:56px}
+.pc-ginfo{flex:1}
+.pc-glbl{font-size:12px;font-weight:800;color:#fff;margin-bottom:2px}
+.pc-gval{display:inline-block;background:rgba(34,197,94,0.18);border:1px solid rgba(34,197,94,0.35);color:#4ADE80;font-size:14px;font-weight:900;padding:3px 10px;border-radius:6px}
+.pc-stats{margin:0 8px 6px;background:rgba(255,255,255,0.04);border:1px solid rgba(200,152,0,0.18);border-radius:9px;padding:8px 11px}
+.pc-srow{display:grid;grid-template-columns:56px 1fr 22px;align-items:center;gap:6px;margin-bottom:4px}
+.pc-srow:last-child{margin-bottom:0}
+.pc-sname{font-size:8px;font-weight:800;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.7px}
+.pc-sbg{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.pc-sfill{height:100%;border-radius:3px}
+.sf-hi{background:#4ADE80}.sf-mid{background:#60A5FA}
+.pc-sval{font-size:10px;font-weight:900;color:#fff;text-align:right}
+.pc-wr{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;background:rgba(0,0,0,0.15);border-top:1px solid rgba(200,152,0,0.13);border-bottom:1px solid rgba(200,152,0,0.13)}
+.pc-wri{display:flex;flex-direction:column;align-items:center;gap:2px}
+.pc-wrl{font-size:7px;color:rgba(255,255,255,0.28);text-transform:uppercase;letter-spacing:.7px;font-weight:700}
+.pc-wrv{font-size:10px;font-weight:800;color:rgba(255,255,255,0.55)}
+.pc-footer{padding:6px 12px 9px;display:flex;align-items:center;justify-content:space-between}
+.pc-fset{font-size:8px;color:rgba(255,255,255,0.18);font-weight:600;letter-spacing:.3px}
+.rstar{width:8px;height:8px;background:var(--gold-l);clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)}
+.rstar.dim{opacity:.22}
+
+/* Auth form */
+.auth-right{width:100%;max-width:340px;flex-shrink:0}
+.auth-title{font-family:'Playfair Display',serif;font-weight:900;font-size:26px;color:#fff;margin-bottom:3px;line-height:1.2}
+.auth-title span{color:var(--gold-l)}
+.auth-sub-t{font-size:13px;color:rgba(255,255,255,0.35);margin-bottom:22px}
+.ftabs{display:flex;background:rgba(255,255,255,0.06);border-radius:10px;padding:3px;margin-bottom:18px;gap:2px;border:1px solid rgba(255,255,255,0.07)}
+.ftab{flex:1;padding:8px;border:none;background:transparent;color:rgba(255,255,255,0.38);font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;border-radius:8px;cursor:pointer;transition:.15s}
+.ftab.active{background:var(--gold-l);color:#1a0800}
+.aerr{background:rgba(220,38,38,0.12);border:1px solid rgba(220,38,38,0.22);border-radius:8px;padding:7px 11px;font-size:12px;color:#F87171;margin-bottom:10px;display:none;font-weight:500}
+.aerr.show{display:block}
+.afield{width:100%;padding:11px 14px;border:1.5px solid rgba(255,255,255,0.1);border-radius:10px;background:rgba(255,255,255,0.06);color:#fff;font-family:'Outfit',sans-serif;font-size:14px;outline:none;margin-bottom:10px;transition:.15s}
+.afield:focus{border-color:var(--gold-l);background:rgba(245,197,24,0.05)}
+.afield::placeholder{color:rgba(255,255,255,0.22)}
+.btn-cta{width:100%;padding:13px;background:var(--gold-l);color:#1a0800;border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-weight:900;font-size:15px;cursor:pointer;transition:.2s;margin-top:2px}
+.btn-cta:hover{background:#FFD740;transform:translateY(-1px);box-shadow:0 6px 20px rgba(245,197,24,0.28)}
+.or-line{display:flex;align-items:center;gap:10px;margin:14px 0;color:rgba(255,255,255,0.18);font-size:12px}
+.or-line::before,.or-line::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07)}
+.demo-box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:13px}
+.demo-box-title{font-size:10px;font-weight:700;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.demo-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.demo-row:last-child{margin-bottom:0}
+.demo-name-t{font-size:13px;color:rgba(255,255,255,0.75);font-weight:600}
+.demo-hint{font-size:10px;color:rgba(255,255,255,0.25)}
+.demo-btn{background:rgba(245,197,24,0.1);border:1px solid rgba(245,197,24,0.28);color:var(--gold-l);font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;font-family:'Outfit',sans-serif;transition:.15s}
+.demo-btn:hover{background:rgba(245,197,24,0.2);border-color:var(--gold-l)}
+
+/* ════ MAIN APP ════ */
+#main-view{display:none;background:var(--bg);min-height:100vh;color:var(--ink)}
+.hdr{background:var(--surf);border-bottom:1px solid var(--border);padding:11px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.logo-wrap{display:flex;align-items:center}
+.hdr-r{display:flex;align-items:center;gap:8px}
+.streak-chip{display:flex;align-items:center;gap:6px;padding:5px 12px 5px 8px;border-radius:50px;cursor:pointer;transition:.2s;border:1.5px solid transparent}
+.streak-chip.none{background:var(--surf2);border-color:var(--border);color:var(--ink3)}
+.streak-chip.bronze{background:linear-gradient(135deg,#F4E4D4,#E8C9A0);border-color:var(--bronze);color:var(--bronze-d)}
+.streak-chip.gold{background:linear-gradient(135deg,#FFFACD,#FFE566);border-color:var(--gold-streak-d);color:var(--gold-streak-d)}
+.streak-chip.platinum{background:linear-gradient(135deg,#E8F8FF,#C8F0FF);border-color:var(--plat-accent);color:#006A8A}
+.streak-chip.gold .si,.streak-chip.platinum .si{animation:spulse 2s ease-in-out infinite}
+@keyframes spulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.si{font-size:18px;line-height:1}
+.streak-days{font-size:13px;font-weight:800;line-height:1.2}
+.streak-tier-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.7}
+.u-chip{display:flex;align-items:center;gap:7px;padding:5px 10px 5px 5px;background:var(--surf2);border:1px solid var(--border);border-radius:50px}
+.u-av{width:26px;height:26px;border-radius:50%;background:var(--ink);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;color:#fff;flex-shrink:0}
+.u-nm{font-size:12px;font-weight:600;color:var(--ink2)}
+.logoutbtn{background:transparent;border:1px solid var(--border2);color:var(--ink3);padding:5px 11px;border-radius:50px;font-size:11px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:.15s}
+.logoutbtn:hover{border-color:var(--red);color:var(--red);background:var(--red-l)}
+.nav-tabs{background:var(--surf);border-bottom:1px solid var(--border);padding:0 22px;display:flex}
+.ntab{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--ink3);padding:11px 14px;font-family:'Outfit',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:.15s;margin-bottom:-1px}
+.ntab:hover{color:var(--ink)}
+.ntab.active{color:var(--ink);border-bottom-color:var(--gold)}
+.screen{display:none;padding:22px;max-width:960px;margin:0 auto}
+.screen.active{display:block}
+.sh h2{font-weight:800;font-size:21px;color:var(--ink);margin-bottom:3px;letter-spacing:-0.5px}
+.sh p{color:var(--ink3);font-size:13px;margin-bottom:18px}
+
+/* ════ SEARCH SYSTEM ════ */
+.search-tabs{display:flex;gap:2px;margin-bottom:12px;background:var(--surf2);border-radius:10px;padding:3px;border:1px solid var(--border)}
+.search-tab{flex:1;padding:7px;border:none;background:transparent;color:var(--ink3);font-family:'Outfit',sans-serif;font-weight:600;font-size:12px;border-radius:8px;cursor:pointer;transition:.15s}
+.search-tab.active{background:var(--surf);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,0.08)}
+.search-wrap{position:relative;margin-bottom:12px}
+.search-input{width:100%;padding:11px 44px 11px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--surf);color:var(--ink);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:.15s}
+.search-input:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(200,150,12,0.1)}
+.search-input::placeholder{color:var(--ink3)}
+.search-spin{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;display:none}
+.search-spin.show{display:block}
+@keyframes spin{to{transform:translateY(-50%) rotate(360deg)}}
+.dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surf);border:1.5px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:100;overflow:hidden;display:none;max-height:280px;overflow-y:auto}
+.dropdown.show{display:block}
+.drop-item{display:flex;align-items:center;gap:10px;padding:10px 13px;cursor:pointer;transition:.12s;border-bottom:1px solid var(--border)}
+.drop-item:last-child{border-bottom:none}
+.drop-item:hover{background:var(--surf2)}
+.drop-sprite{width:44px;height:44px;object-fit:contain;flex-shrink:0;border-radius:6px;background:var(--surf2)}
+.drop-info{}
+.drop-name{font-size:13px;font-weight:700;color:var(--ink)}
+.drop-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+.drop-price{font-size:11px;font-weight:700;color:var(--green);margin-top:1px}
+
+/* Loaded card info banner */
+.card-info-banner{
+  background:var(--surf);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;margin-bottom:14px;display:none;
+}
+.card-info-banner.show{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cib-img{width:40px;height:40px;object-fit:contain;border-radius:6px;background:var(--surf2);flex-shrink:0}
+.cib-info{flex:1;min-width:120px}
+.cib-name{font-size:13px;font-weight:700;color:var(--ink)}
+.cib-sub{font-size:11px;color:var(--ink3);margin-top:1px}
+.cib-price{font-size:12px;font-weight:700;color:var(--green);margin-top:2px}
+.cib-badges{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
+.cib-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px}
+.badge-tcg{background:var(--blue-l);color:var(--blue)}
+.badge-pokeapi{background:var(--green-l);color:var(--green)}
+.badge-cache{background:var(--amber-l);color:#92400E}
+.badge-live{background:#DCFCE7;color:#14532D}
+
+/* Grade layout */
+.grade-layout{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.app-pcard{width:280px;flex-shrink:0;border-radius:18px;border:2px solid #5C3D00;outline:4px solid #D4A017;outline-offset:-2px;overflow:hidden;background:var(--card-dark);position:relative;font-family:'Outfit',sans-serif}
+.app-pcard::after{content:'';position:absolute;inset:7px;border-radius:12px;border:1px solid rgba(255,220,80,0.2);pointer-events:none;z-index:10}
+.grade-right{flex:1;min-width:200px}
+.api-notice{background:var(--amber-l);border:1.5px solid rgba(217,119,6,0.25);border-radius:10px;padding:11px 14px;font-size:12px;color:#92400E;margin-bottom:14px;line-height:1.5;font-weight:500}
+.api-row{display:flex;gap:6px;margin-top:7px}
+.api-row input{flex:1;padding:7px 11px;border:1.5px solid rgba(217,119,6,0.3);border-radius:8px;background:#fff;color:var(--ink);font-size:12px;outline:none;font-family:'Outfit',sans-serif}
+.arow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn-primary{background:var(--ink);color:#fff;border:none;border-radius:10px;padding:10px 20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:.15s}
+.btn-primary:hover{background:#2C2C2C;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-ghost{background:var(--surf);color:var(--ink2);border:1.5px solid var(--border2);border-radius:10px;padding:10px 18px;font-family:'Outfit',sans-serif;font-weight:600;font-size:13px;cursor:pointer;transition:.15s}
+.btn-ghost:hover{background:var(--surf2)}
+.btn-sm{padding:7px 14px!important;font-size:12px!important;width:auto!important;border-radius:8px!important}
+.loading-w{text-align:center;padding:20px;display:none}
+.loading-w.show{display:block}
+.spinner-g{width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 9px}
+.ltxt{font-size:12px;color:var(--ink3);font-weight:500}
+.nbox{background:var(--green-l);border:1px solid rgba(22,163,74,0.2);border-radius:9px;padding:10px 12px;font-size:12px;color:#166534;line-height:1.6;margin-top:10px}
+.price-box{background:var(--surf2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-top:10px}
+.price-box-title{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.price-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;font-size:12px}
+.price-row:last-child{margin-bottom:0;padding-top:6px;border-top:1px solid var(--border);font-weight:700}
+.price-src{color:var(--ink2)}
+.price-amt{font-weight:600;color:var(--ink)}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.usage-w{margin-bottom:14px;padding:10px 13px;background:var(--surf);border:1px solid var(--border);border-radius:10px}
+.utrack{height:5px;background:var(--surf2);border-radius:3px;overflow:hidden;margin-top:5px}
+.ufill{height:100%;border-radius:3px;background:var(--gold);transition:width .4s}
+.ufill.full{background:var(--red)}
+
+/* Collection */
+.cstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(108px,1fr));gap:9px;margin-bottom:18px}
+.cstat{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:13px 14px}
+.cstat-n{font-weight:800;font-size:22px;color:var(--ink);line-height:1;letter-spacing:-0.5px}
+.cstat-l{font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px;font-weight:600}
+.chart-section{background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:16px;margin-bottom:18px}
+.chart-hdr{display:flex;align-items:baseline;gap:8px;margin-bottom:14px}
+.chart-hdr h3{font-weight:700;font-size:14px;color:var(--ink)}
+.chart-hdr span{font-size:11px;color:var(--ink3)}
+.bar-chart{display:flex;flex-direction:column;gap:8px}
+.bar-row{display:grid;grid-template-columns:130px 1fr 72px 48px;align-items:center;gap:9px}
+.bar-name{font-size:11px;color:var(--ink2);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{height:20px;background:var(--surf2);border-radius:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding-left:9px;min-width:56px;transition:width .9s cubic-bezier(.34,1.2,.64,1)}
+.bar-fill-lbl{font-size:10px;font-weight:700;white-space:nowrap}
+.bar-val{font-size:11px;font-weight:700;color:var(--green);text-align:right}
+.psa-badge{font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px;display:inline-block;white-space:nowrap;text-align:center}
+.sort-bar{display:flex;align-items:center;gap:8px;margin-bottom:11px}
+.sort-sel{padding:5px 10px;border:1.5px solid var(--border2);border-radius:8px;font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;background:var(--surf);color:var(--ink);outline:none;cursor:pointer}
+.coll-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.cc{background:var(--surf);border:1px solid var(--border);border-radius:13px;overflow:hidden;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.cc:hover{border-color:var(--gold);box-shadow:0 4px 16px rgba(0,0,0,0.09);transform:translateY(-2px)}
+/* ── COLLECTION CARD THUMBNAIL ── */
+.cc-img-wrap{
+  width:100%;
+  background:#0f0f1a;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+  /* TCG card ratio is 63×88mm = 1:1.4 portrait.
+     At grid col ~180px wide, height = 180 × 1.4 = 252px */
+  aspect-ratio:5/7;
+}
+/* The pokemontcg.io image IS the complete card — fill the box */
+.cc-tcg-card{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  display:block;
+  transition:transform .25s ease;
+}
+.cc:hover .cc-tcg-card{transform:scale(1.05)}
+/* PSA slab badge — bottom right corner */
+.cc-psa-slab{
+  position:absolute;bottom:7px;right:7px;
+  background:linear-gradient(135deg,rgba(10,10,30,0.95),rgba(20,20,50,0.95));
+  border:1.5px solid #D4A017;
+  border-radius:7px;
+  padding:4px 8px;
+  display:flex;flex-direction:column;align-items:center;
+  box-shadow:0 2px 10px rgba(0,0,0,0.6);
+  backdrop-filter:blur(4px);
+  z-index:2;
+}
+.cc-psa-slab-label{font-size:7px;font-weight:800;color:#D4A017;letter-spacing:1.5px;text-transform:uppercase;line-height:1;margin-bottom:1px}
+.cc-psa-slab-num{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:#fff;line-height:1;letter-spacing:-1px}
+.cc-psa-slab::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px;border-radius:7px 7px 0 0}
+.cc-slab-10::before{background:linear-gradient(90deg,#FFD700,#FFF066)}
+.cc-slab-9::before{background:linear-gradient(90deg,#16A34A,#4ADE80)}
+.cc-slab-8::before{background:linear-gradient(90deg,#2563EB,#60A5FA)}
+.cc-slab-7::before{background:linear-gradient(90deg,#2563EB,#93C5FD)}
+.cc-slab-6::before,.cc-slab-5::before{background:linear-gradient(90deg,#D97706,#FCD34D)}
+/* User photo display */
+.cc-photo-wrap{
+  width:100%;aspect-ratio:5/7;
+  background:#111;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.cc-photo-wrap img{width:100%;height:100%;object-fit:cover}
+/* Emoji fallback */
+.cc-emoji-wrap{
+  width:100%;aspect-ratio:5/7;
+  background:linear-gradient(135deg,#1B3F6E,#0f2744);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+}
+.cc-emoji-wrap .ce{font-size:48px;filter:drop-shadow(0 4px 8px rgba(0,0,0,0.5))}
+.cc-emoji-wrap small{font-size:10px;color:rgba(255,255,255,0.3);font-weight:600;text-align:center;padding:0 8px}
+.cc-body{padding:9px 10px}
+.cc-name{font-weight:700;font-size:12px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px}
+.cc-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.cc-date{font-size:10px;color:var(--ink3);margin-bottom:5px}
+.cc-set{font-size:10px;color:var(--blue);margin-bottom:5px;font-weight:500}
+.cc-cond{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:6px}
+.cc-ci{background:var(--surf2);border-radius:4px;padding:3px;text-align:center}
+.cc-cl{font-size:8px;color:var(--ink3);font-weight:700;text-transform:uppercase}
+.cc-cv{font-size:11px;font-weight:800;color:var(--ink)}
+.mini-bar-wrap{margin-bottom:5px}
+.mini-bar-lbl{font-size:9px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;display:flex;justify-content:space-between}
+.mini-bar-track{height:5px;background:var(--surf2);border-radius:3px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:3px}
+.cc-notes{font-size:10px;color:var(--ink3);line-height:1.5;margin-bottom:5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cc-footer{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-top:1px solid var(--border)}
+.grade-pill{font-weight:700;font-size:10px;padding:2px 7px;border-radius:20px}
+.cc-v{font-weight:700;font-size:12px;color:var(--green)}
+.del-btn{background:transparent;border:none;color:var(--ink3);font-size:10px;font-weight:600;padding:3px 7px;border-radius:6px;cursor:pointer;font-family:'Outfit',sans-serif;transition:.15s}
+.del-btn:hover{background:var(--red-l);color:var(--red)}
+.share-btn{background:transparent;border:1px solid var(--border2);color:var(--ink3);padding:3px 7px;border-radius:6px;cursor:pointer;transition:.15s;display:flex;align-items:center}
+.share-btn:hover{background:var(--blue-l);color:var(--blue);border-color:var(--blue)}
+/* Share modal overlay */
+.share-modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:.2s}
+.share-modal.show{opacity:1;pointer-events:all}
+.share-modal-inner{background:var(--surf);border-radius:20px;padding:24px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25);transform:translateY(12px);transition:.3s}
+.share-modal.show .share-modal-inner{transform:translateY(0)}
+.share-modal-title{font-weight:800;font-size:17px;color:var(--ink);margin-bottom:4px;letter-spacing:-0.3px}
+.share-modal-sub{font-size:12px;color:var(--ink3);margin-bottom:18px}
+/* Preview canvas container */
+.share-preview{width:100%;border-radius:12px;overflow:hidden;margin-bottom:16px;background:var(--surf2);aspect-ratio:4/3;display:flex;align-items:center;justify-content:center}
+.share-preview canvas{width:100%;height:auto;border-radius:12px;display:block}
+.share-preview-loading{font-size:12px;color:var(--ink3);font-weight:500}
+/* Share destination buttons */
+.share-destinations{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.share-dest{border:1.5px solid var(--border);border-radius:12px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;background:var(--surf);transition:.15s;font-family:'Outfit',sans-serif}
+.share-dest:hover{border-color:var(--gold);background:var(--surf2);transform:translateY(-1px)}
+.share-dest-icon{font-size:22px}
+.share-dest-label{font-size:11px;font-weight:700;color:var(--ink2)}
+.share-close{width:100%;padding:10px;background:var(--surf2);border:none;border-radius:10px;font-family:'Outfit',sans-serif;font-weight:600;font-size:13px;color:var(--ink3);cursor:pointer;transition:.15s}
+.share-close:hover{background:var(--border);color:var(--ink)}
+.empty-state{grid-column:1/-1;text-align:center;padding:50px 20px;color:var(--ink3)}
+.empty-state h3{font-weight:700;font-size:15px;color:var(--ink2);margin-bottom:5px}
+
+/* Streak */
+.streak-panel{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:20px;position:relative;overflow:hidden}
+.streak-panel.bronze{background:linear-gradient(135deg,#FFF8F0,var(--surf) 60%);border-color:rgba(205,127,50,0.3)}
+.streak-panel.gold{background:linear-gradient(135deg,#FFFDF0,var(--surf) 60%);border-color:rgba(255,215,0,0.35)}
+.streak-panel.platinum{background:linear-gradient(135deg,#F0FAFF,var(--surf) 60%);border-color:rgba(0,200,255,0.25)}
+.streak-panel::before{content:attr(data-streak);position:absolute;right:-10px;top:-20px;font-family:'Playfair Display',serif;font-size:120px;font-weight:900;color:rgba(0,0,0,0.03);line-height:1;pointer-events:none;letter-spacing:-5px}
+.streak-panel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.streak-panel-left{display:flex;align-items:center;gap:16px}
+.streak-big-icon{width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0}
+.streak-big-icon.none{background:var(--surf2);border:2px solid var(--border)}
+.streak-big-icon.bronze{background:linear-gradient(135deg,#F4E4D4,#E8C9A0);border:2px solid var(--bronze)}
+.streak-big-icon.gold{background:linear-gradient(135deg,#FFF8C0,#FFE566);border:2px solid var(--gold-streak-d);animation:glow 2s ease-in-out infinite}
+.streak-big-icon.platinum{background:linear-gradient(135deg,#E0F8FF,#B0EEFF);border:2px solid var(--plat-accent);animation:plat-glow 2s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(255,215,0,0.3)}50%{box-shadow:0 0 16px 4px rgba(255,215,0,0.2)}}
+@keyframes plat-glow{0%,100%{box-shadow:0 0 0 0 rgba(0,200,255,0.3)}50%{box-shadow:0 0 16px 4px rgba(0,200,255,0.15)}}
+.streak-count{font-family:'Playfair Display',serif;font-weight:900;font-size:36px;color:var(--ink);letter-spacing:-1.5px;line-height:1;margin-bottom:2px}
+.streak-label{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:4px}
+.streak-tier-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.6px}
+.stb-none{background:var(--surf2);color:var(--ink3);border:1px solid var(--border)}
+.stb-bronze{background:var(--bronze-l);color:var(--bronze-d);border:1px solid rgba(205,127,50,0.3)}
+.stb-gold{background:var(--gold-streak-l);color:var(--gold-streak-d);border:1px solid rgba(255,215,0,0.4)}
+.stb-platinum{background:#E0F8FF;color:#006A8A;border:1px solid rgba(0,200,255,0.3)}
+.streak-progress-wrap{flex:1;min-width:180px}
+.streak-next-label{font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:flex;justify-content:space-between}
+.streak-track{height:8px;background:var(--surf2);border-radius:4px;overflow:hidden;margin-bottom:5px}
+.streak-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.34,1.2,.64,1)}
+.sfill-none{background:var(--border2)}
+.sfill-bronze{background:linear-gradient(90deg,#CD7F32,#E8A055)}
+.sfill-gold{background:linear-gradient(90deg,#FFD700,#FFE566)}
+.sfill-platinum{background:linear-gradient(90deg,#00C8FF,#80E8FF)}
+.streak-next-hint{font-size:11px;color:var(--ink3)}
+.streak-calendar{margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.streak-cal-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.streak-dots{display:flex;gap:6px;flex-wrap:wrap}
+.streak-dot{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;border:1.5px solid var(--border);color:var(--ink3);background:var(--surf2);transition:.2s}
+.streak-dot.active-day{color:#fff;border-color:transparent}
+.streak-dot.active-day.none{background:var(--ink2)}
+.streak-dot.active-day.bronze{background:linear-gradient(135deg,#CD7F32,#E8A055)}
+.streak-dot.active-day.gold{background:linear-gradient(135deg,#FFD700,#E8B820)}
+.streak-dot.active-day.platinum{background:linear-gradient(135deg,#00C8FF,#0090BB)}
+.streak-dot.today{border-color:var(--gold);color:var(--gold)}
+.streak-dot.today.active-day{border-color:transparent}
+.streak-milestones{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.milestone{border-radius:12px;padding:12px;text-align:center;border:1.5px solid var(--border);background:var(--surf2);transition:.2s}
+.milestone.unlocked{background:var(--surf);border-color:transparent;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.milestone.current{transform:scale(1.02)}
+.milestone.locked{opacity:.45}
+.milestone-icon{font-size:22px;margin-bottom:6px;display:block}
+.milestone-name{font-size:11px;font-weight:800;margin-bottom:2px}
+.milestone-req{font-size:10px;color:var(--ink3)}
+.milestone.bronze-m .milestone-name{color:var(--bronze-d)}
+.milestone.gold-m .milestone-name{color:var(--gold-streak-d)}
+.milestone.platinum-m .milestone-name{color:#006A8A}
+
+/* Pricing */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:13px;margin-top:6px}
+.pc2{background:var(--surf);border:1.5px solid var(--border);border-radius:18px;padding:21px 17px;position:relative}
+.pc2.feat{border-color:var(--gold);border-width:2px;box-shadow:0 4px 20px rgba(200,150,12,0.1)}
+.pbadge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--gold);color:#fff;padding:3px 13px;border-radius:20px;font-weight:700;font-size:10px;white-space:nowrap;font-family:'Outfit',sans-serif}
+.plan-name{font-weight:800;font-size:16px;color:var(--ink);margin-bottom:3px}
+.plan-price{font-family:'Playfair Display',serif;font-weight:900;font-size:28px;color:var(--ink);margin:7px 0 2px;line-height:1}
+.plan-price span{font-size:12px;font-weight:400;color:var(--ink3);font-family:'Outfit',sans-serif}
+.plan-sub{font-size:11px;color:var(--ink3);margin-bottom:10px;font-style:italic}
+.pf{list-style:none;margin:11px 0 16px;display:flex;flex-direction:column;gap:5px}
+.pf li{font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:5px}
+.chk{color:var(--green);font-size:12px}.xmk{color:var(--ink3);font-size:12px}
+.btn-gs{background:var(--surf2);color:var(--ink2);border:1.5px solid var(--border2);border-radius:9px;padding:9px;font-family:'Outfit',sans-serif;font-weight:600;font-size:12px;cursor:pointer;width:100%;transition:.15s}
+
+/* Streak toast */
+.streak-toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);border-radius:16px;padding:16px 22px;display:flex;align-items:center;gap:14px;opacity:0;transition:all .4s cubic-bezier(.34,1.3,.64,1);z-index:200;pointer-events:none;min-width:280px;max-width:360px;box-shadow:0 8px 32px rgba(0,0,0,0.15)}
+.streak-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.streak-toast.none{background:var(--surf);border:2px solid var(--border)}
+.streak-toast.bronze{background:linear-gradient(135deg,#F4E4D4,#EED0A8);border:2px solid var(--bronze)}
+.streak-toast.gold{background:linear-gradient(135deg,#FFFACD,#FFE566);border:2px solid var(--gold-streak-d)}
+.streak-toast.platinum{background:linear-gradient(135deg,#E0F8FF,#B0EEFF);border:2px solid var(--plat-accent)}
+.st-icon{font-size:32px;flex-shrink:0;animation:pop .4s cubic-bezier(.34,1.5,.64,1) .2s both}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.st-title{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:2px}
+.st-sub{font-size:12px;color:var(--ink2)}
+
+.toast{position:fixed;bottom:16px;right:16px;background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:12px;font-family:'Outfit',sans-serif;font-weight:600;z-index:999;transform:translateY(60px);opacity:0;transition:.25s;max-width:280px;box-shadow:0 8px 24px rgba(0,0,0,0.18)}
+.toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="auth-view">
+  <div class="auth-page">
+    <div class="bg-cards"><div class="bgc bgc1"></div><div class="bgc bgc2"></div><div class="bgc bgc3"></div><div class="bgc bgc4"></div></div>
+    <div class="auth-layout">
+      <div class="auth-left">
+        <div><div class="brand">CardsQuest</div><div class="brand-sub">AI card grading · Live pricing · PokeAPI + TCG API</div></div>
+        <div class="pcard-wrap">
+          <div class="pcard">
+            <div class="pc-banner"><div class="pc-name">Charizard</div><div class="pc-hp">HP <b>170</b></div></div>
+            <div class="pc-stage"><span class="pc-stage-pill">Stage 2</span><span class="pc-stage-sub">Evolves from Charmeleon</span></div>
+            <div class="pc-art" style="cursor:default;overflow:hidden">
+              <img src="data:image/jpeg;base64,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"
+                alt="Charizard 025/185"
+                style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block"/>
+              <div class="art-shine" style="position:absolute;inset:0"></div>
+            </div>
+            <div class="pc-set-info"><span class="pc-set-name">Darkness Ablaze · 025/185</span><span class="pc-rarity">Rare ★</span></div>
+            <div class="pc-type-strip"><span class="tbadge" style="background:#7B1515;color:#FFBDBA;border:1px solid #C03030">🔥 Fire</span><span style="color:var(--gold-l);font-size:12px;letter-spacing:2px">◆◆◆</span></div>
+            <div class="pc-move"><div class="pc-move-lbl">PSA Grade Analysis</div><div class="pc-grade-row"><div class="pc-gnum">9</div><div class="pc-ginfo"><div class="pc-glbl">Mint</div><div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:5px">AI Confidence: 92%</div><div class="pc-gval">$2,400</div></div></div></div>
+            <div class="pc-stats"><div class="pc-move-lbl">Condition Breakdown</div><div class="pc-srow"><span class="pc-sname">Centering</span><div class="pc-sbg"><div class="pc-sfill sf-hi" style="width:90%"></div></div><span class="pc-sval">9</span></div><div class="pc-srow"><span class="pc-sname">Corners</span><div class="pc-sbg"><div class="pc-sfill sf-hi" style="width:90%"></div></div><span class="pc-sval">9</span></div><div class="pc-srow"><span class="pc-sname">Edges</span><div class="pc-sbg"><div class="pc-sfill sf-mid" style="width:80%"></div></div><span class="pc-sval">8</span></div><div class="pc-srow"><span class="pc-sname">Surface</span><div class="pc-sbg"><div class="pc-sfill sf-hi" style="width:90%"></div></div><span class="pc-sval">9</span></div></div>
+            <div class="pc-wr"><div class="pc-wri"><span class="pc-wrl">Weakness</span><span class="pc-wrv">Water ×2</span></div><div class="pc-wri"><span class="pc-wrl">Resistance</span><span class="pc-wrv">—</span></div><div class="pc-wri"><span class="pc-wrl">Retreat</span><span class="pc-wrv">⬤⬤⬤</span></div></div>
+            <div class="pc-footer"><div class="pc-fset">CardsQuest AI · 2025</div><div style="display:flex;gap:2px"><div class="rstar"></div><div class="rstar"></div><div class="rstar dim"></div></div></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.18);text-align:center">Grade smarter. Collect better.</div>
+      </div>
+      <div class="auth-right">
+        <div class="auth-title">Welcome back,<br><span>Trainer.</span></div>
+        <div class="auth-sub-t">Login to your collection</div>
+        <div class="ftabs"><button class="ftab active" onclick="atab('login',this)">Login</button><button class="ftab" onclick="atab('signup',this)">Sign Up</button></div>
+        <div class="aerr" id="aerr"></div>
+        <div id="f-login"><input class="afield" id="li-em" type="email" placeholder="Email address"/><input class="afield" id="li-pw" type="password" placeholder="Password"/><button class="btn-cta" onclick="doLogin()">Login to My Collection →</button></div>
+        <div id="f-signup" style="display:none"><input class="afield" id="su-nm" placeholder="Trainer name"/><input class="afield" id="su-em" type="email" placeholder="Email address"/><input class="afield" id="su-pw" type="password" placeholder="Password (min 6 chars)"/><button class="btn-cta" onclick="doSignup()">Create My Account →</button></div>
+        <div class="or-line">demo trainers</div>
+        <div class="demo-box">
+          <div class="demo-box-title">Jump in instantly</div>
+          <div class="demo-row"><div><div class="demo-name-t">Ash Ketchum 🔥 14d Gold</div><div class="demo-hint">5 cards · $13,175</div></div><button class="demo-btn" onclick="qlogin('ash@pokégrade.app','Ash Ketchum')">Login ▶</button></div>
+          <div class="demo-row"><div><div class="demo-name-t">Misty Waterflower 💎 32d Plat</div><div class="demo-hint">4 cards · $1,750</div></div><button class="demo-btn" onclick="qlogin('misty@pokégrade.app','Misty Waterflower')">Login ▶</button></div>
+          <div class="demo-row"><div><div class="demo-name-t">Brock Harrison 🥉 5d Bronze</div><div class="demo-hint">3 cards · $152</div></div><button class="demo-btn" onclick="qlogin('brock@pokégrade.app','Brock Harrison')">Login ▶</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-view">
+  <div class="hdr">
+    <div class="logo">CardsQuest</div>
+    <div class="hdr-r">
+      <div class="streak-chip none" id="streak-chip" onclick="nav('streak',document.getElementById('ntab-streak'))">
+        <div class="si" id="si">🃏</div>
+        <div><div class="streak-days" id="sdays">0 days</div><div class="streak-tier-lbl" id="stlbl">No streak</div></div>
+      </div>
+      <div class="u-chip"><div class="u-av" id="u-av">?</div><div class="u-nm" id="u-nm">Trainer</div></div>
+      <span id="plan-badge" style="display:none;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid;letter-spacing:.4px;text-transform:uppercase"></span>
+      <button class="logoutbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="ntab active" onclick="nav('grade',this)">Grade a Card</button>
+    <button class="ntab" onclick="nav('collection',this)">My Collection</button>
+    <button class="ntab" id="ntab-streak" onclick="nav('streak',this)">My Streak</button>
+    <button class="ntab" onclick="nav('pricing',this)">Pricing</button>
+  </div>
+
+  <!-- GRADE SCREEN -->
+  <div id="screen-grade" class="screen active">
+    <div class="sh"><h2>Grade a Card</h2><p>Search by Pokémon name or specific card set — powered by PokeAPI + PokémonTCG API with smart caching</p></div>
+
+    <!-- Free scan usage bar -->
+    <div class="usage-w" id="usage-w">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--ink3);font-weight:600;text-transform:uppercase;letter-spacing:.6px">Free scans remaining</span>
+        <span style="font-size:12px;font-weight:700;color:var(--ink)" id="utxt">3 / 3</span>
+      </div>
+      <div class="utrack"><div class="ufill" id="ufill" style="width:0%"></div></div>
+    </div>
+
+    <!-- Cache stats bar -->
+    <div class="cache-stats" id="cache-stats">
+      <div class="cs-item"><div class="cs-dot" style="background:#14532D"></div><span id="cs-hits">0 cache hits</span></div>
+      <div class="cs-item"><div class="cs-dot" style="background:#1E3A8A"></div><span id="cs-miss">0 API calls</span></div>
+      <div class="cs-item"><div class="cs-dot" style="background:#92400E"></div><span id="cs-saved">$0.00 saved</span></div>
+      <span style="margin-left:auto;font-size:10px;color:var(--ink3)">Cache active — results saved for faster lookups</span>
+    </div>
+
+    <div class="grade-layout">
+      <!-- POKÉMON CARD -->
+      <div class="app-pcard">
+        <div class="pc-banner"><div class="pc-name" id="d-name">Search a card</div><div class="pc-hp">HP <b id="d-hp">—</b></div></div>
+        <div class="pc-stage"><span class="pc-stage-pill" id="d-stage">Basic</span><span class="pc-stage-sub" id="d-evoline">Search to load data</span></div>
+        <div class="pc-art" id="art-wrap">
+          <!-- Layer 1: default sky/grass background -->
+          <div class="art-bg-layer" id="art-bg"><div class="art-shine"></div><div class="art-emoji" id="art-emoji">🃏</div></div>
+          <!-- Layer 2: Real TCG card scan — contain so full card visible -->
+          <div class="art-img-layer" id="art-tcg-layer" style="display:none">
+            <img id="art-tcg-img" src="" alt="" style="width:100%;height:100%;object-fit:contain;object-position:center"/>
+          </div>
+          <!-- Layer 3: Official PokeAPI artwork — contain on scenic bg -->
+          <div class="art-img-layer" id="art-official-layer" style="display:none;background:linear-gradient(180deg,#8EC5E8 0%,#6AAED8 44%,#5A9E48 44%,#3A7828 100%)">
+            <img id="art-official-img" src="" alt="" style="width:90%;height:90%;object-fit:contain;object-position:center"/>
+          </div>
+          <!-- Layer 4: User uploaded photo -->
+          <div class="art-img-layer" id="art-photo-layer" style="display:none">
+            <img id="art-photo-img" src="" alt="" style="width:100%;height:100%;object-fit:cover"/>
+          </div>
+        </div>
+        <!-- Permanent upload button — always visible, below the art zone -->
+        <div class="art-upload-btn" id="art-upload-btn" onclick="document.getElementById('file-in').click()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+          <span id="art-overlay-txt">📸 Upload your card photo to grade</span>
+        </div>
+        <div class="pc-set-info"><span class="pc-set-name" id="d-set">No set loaded</span><span class="pc-rarity" id="d-rarity">—</span></div>
+        <div class="pc-type-strip"><span class="tbadge" id="d-type" style="background:#383838;color:#D8D8D8;border:1px solid #666">No type</span><span style="color:var(--gold-l);font-size:12px;letter-spacing:2px">◆◆◆</span></div>
+        <div class="pc-move">
+          <div class="pc-move-lbl">PSA Grade Analysis</div>
+          <div class="pc-grade-row"><div class="pc-gnum" id="g-num">—</div><div class="pc-ginfo"><div class="pc-glbl" id="g-lbl">Awaiting scan</div><div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:4px" id="g-desc">Search + upload to grade</div><div class="pc-gval" id="g-val" style="display:none"></div></div></div>
+        </div>
+        <div class="pc-stats" id="stat-box" style="display:none"><div class="pc-move-lbl">Condition Breakdown</div><div id="stat-rows"></div></div>
+        <div class="pc-wr">
+          <div class="pc-wri"><span class="pc-wrl">Weakness</span><span class="pc-wrv" id="d-weak">—</span></div>
+          <div class="pc-wri"><span class="pc-wrl">Resistance</span><span class="pc-wrv" id="d-resist">—</span></div>
+          <div class="pc-wri"><span class="pc-wrl">Retreat</span><span class="pc-wrv" id="d-retreat">⬤⬤</span></div>
+        </div>
+        <div class="pc-footer"><div class="pc-fset" id="d-footer">CardsQuest AI · 2025</div><div id="conf-b" style="font-size:8px;color:rgba(245,197,24,0.5);font-weight:700"></div></div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="grade-right">
+
+        <!-- Search mode tabs -->
+        <div class="search-tabs">
+          <button class="search-tab active" onclick="setSearchMode('tcg',this)" id="tab-tcg">
+            🃏 Search by Card (TCG API)
+          </button>
+          <button class="search-tab" onclick="setSearchMode('pokemon',this)" id="tab-poke">
+            🎮 Search by Pokémon (PokeAPI)
+          </button>
+        </div>
+
+        <!-- TCG Card search -->
+        <div id="search-tcg">
+          <div class="search-wrap">
+            <input type="text" class="search-input" id="tcg-search" placeholder="Search card name, set, or number (e.g. Charizard base1-4)" oninput="onTCGSearch(this.value)" autocomplete="off"/>
+            <div class="search-spin" id="tcg-spin"></div>
+            <div class="dropdown" id="tcg-dropdown"></div>
+          </div>
+          <p style="font-size:11px;color:var(--ink3);margin-bottom:12px">Searches the PokémonTCG API (pokemontcg.io) — returns real card images, HP, attacks, and market prices by set.</p>
+        </div>
+
+        <!-- Pokémon search -->
+        <div id="search-pokemon" style="display:none">
+          <div class="search-wrap">
+            <input type="text" class="search-input" id="poke-search" placeholder="Search Pokémon name (e.g. Charizard, Pikachu...)" oninput="onPokeSearch(this.value)" autocomplete="off"/>
+            <div class="search-spin" id="poke-spin"></div>
+            <div class="dropdown" id="poke-dropdown"></div>
+          </div>
+          <p style="font-size:11px;color:var(--ink3);margin-bottom:12px">Searches PokeAPI — loads official artwork, type, weakness, HP, evolution stage. Great for unknown sets.</p>
+        </div>
+
+        <!-- Loaded card info banner -->
+        <div class="card-info-banner" id="card-banner">
+          <img class="cib-img" id="cib-img" src="" alt=""/>
+          <div class="cib-info">
+            <div class="cib-name" id="cib-name">—</div>
+            <div class="cib-sub" id="cib-sub">—</div>
+            <div class="cib-price" id="cib-price"></div>
+            <div class="cib-badges" id="cib-badges"></div>
+          </div>
+        </div>
+
+        <p style="font-size:13px;color:var(--ink3);line-height:1.7;margin-bottom:14px">
+          Search fills the card with real data, then tap the upload button on the card to add your photo for PSA-accurate AI grading.
+        </p>
+
+        <div class="arow">
+          <button class="btn-primary" id="grade-btn" onclick="doGrade()" disabled style="width:auto">Analyze &amp; Grade</button>
+          <button class="btn-ghost" onclick="clearAll()">Clear</button>
+        </div>
+        <div class="loading-w" id="loading-w"><div class="spinner-g"></div><p class="ltxt" id="ltxt">Analyzing card...</p></div>
+        <div id="notes-area"></div>
+        <div id="price-area"></div>
+        <div id="save-area" style="display:none">
+          <div class="divider"></div>
+          <div class="arow">
+            <button class="btn-primary" onclick="saveCard()" style="width:auto">Save to My Collection</button>
+            <button class="btn-ghost" onclick="clearAll()">Grade Another</button>
+          </div>
+        </div>
+        <input type="file" id="file-in" accept="image/*" style="display:none" onchange="onFile(event)"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLLECTION -->
+  <div id="screen-collection" class="screen">
+    <div class="sh">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px">
+        <div>
+          <h2>My Collection</h2>
+          <p id="coll-sub" style="margin-bottom:0">Your graded cards sorted by value</p>
+        </div>
+        <button onclick="shareCollection()" style="display:flex;align-items:center;gap:7px;background:var(--ink);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:.15s;white-space:nowrap;flex-shrink:0" onmouseover="this.style.background='#2C2C2C'" onmouseout="this.style.background='var(--ink)'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share Collection
+        </button>
+      </div>
+    </div>
+    <div class="cstats" id="cstats"></div>
+    <div class="chart-section"><div class="chart-hdr"><h3>Value &amp; PSA grade overview</h3><span>highest → lowest</span></div><div class="bar-chart" id="bar-chart"></div></div>
+    <div class="sort-bar"><span style="font-size:11px;color:var(--ink3);font-weight:600">Sort:</span><select class="sort-sel" onchange="sortColl(this.value)"><option value="val-d">Value ↓</option><option value="val-a">Value ↑</option><option value="grade-d">Grade ↓</option><option value="grade-a">Grade ↑</option><option value="new">Newest</option></select></div>
+    <div class="coll-grid" id="coll-grid"></div>
+  </div>
+
+  <!-- STREAK -->
+  <div id="screen-streak" class="screen">
+    <div class="sh"><h2>My Streak</h2><p>Log in daily to build your streak and unlock collector tiers</p></div>
+    <div id="streak-panel-container"></div>
+  </div>
+
+  <!-- PRICING — 4 tiers -->
+  <div id="screen-pricing" class="screen">
+    <div class="sh"><h2>Simple Pricing</h2><p>Start free. Upgrade when you're ready. No surprise fees.</p></div>
+    <div class="pgrid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+
+      <!-- FREE -->
+      <div class="pc2">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0 <span>/mo</span></div>
+        <div class="plan-sub">Try it, no card required</div>
+        <ul class="pf">
+          <li><span class="chk">✓</span> 3 scans / month</li>
+          <li><span class="chk">✓</span> PSA-accurate AI grading</li>
+          <li><span class="chk">✓</span> TCG card search + PokeAPI</li>
+          <li><span class="chk">✓</span> Daily streak tracking</li>
+          <li><span class="xmk">✗</span> Card sharing</li>
+          <li><span class="xmk">✗</span> Live market prices</li>
+          <li><span class="xmk">✗</span> Collection sharing</li>
+        </ul>
+        <button class="btn-gs">Current Plan</button>
+      </div>
+
+      <!-- STARTER -->
+      <div class="pc2">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price">$7.99 <span>/mo</span></div>
+        <div class="plan-sub">Perfect for casual collectors</div>
+        <ul class="pf">
+          <li><span class="chk">✓</span> 25 scans / month</li>
+          <li><span class="chk">✓</span> PSA-accurate AI grading</li>
+          <li><span class="chk">✓</span> Share individual cards</li>
+          <li><span class="chk">✓</span> Share your collection</li>
+          <li><span class="chk">✓</span> Collection tracking</li>
+          <li><span class="xmk">✗</span> Live market prices</li>
+          <li><span class="xmk">✗</span> Priority grading</li>
+        </ul>
+        <button class="btn-gs" onclick="toast('Starter coming soon! 🚀')">Get Starter — $7.99/mo</button>
+      </div>
+
+      <!-- PRO -->
+      <div class="pc2 feat">
+        <div class="pbadge">Most Popular</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">$19 <span>/mo</span></div>
+        <div class="plan-sub">Less than one PSA submission</div>
+        <ul class="pf">
+          <li><span class="chk">✓</span> <strong>Unlimited</strong> scans</li>
+          <li><span class="chk">✓</span> Live prices — TCGPlayer, eBay, CardMarket</li>
+          <li><span class="chk">✓</span> Share cards + collections</li>
+          <li><span class="chk">✓</span> Full collection tracking + export</li>
+          <li><span class="chk">✓</span> Priority AI grading queue</li>
+          <li><span class="chk">✓</span> Platinum streak perks</li>
+          <li><span class="chk">✓</span> US + EU market data</li>
+        </ul>
+        <button class="btn-primary" style="width:100%" onclick="toast('Pro coming soon! 🚀')">Upgrade to Pro — $19/mo</button>
+      </div>
+
+      <!-- LIFETIME -->
+      <div class="pc2">
+        <div class="plan-name">Lifetime</div>
+        <div class="plan-price">$149 <span>once</span></div>
+        <div class="plan-sub">Pays for itself in 8 months</div>
+        <ul class="pf">
+          <li><span class="chk">✓</span> Everything in Pro, forever</li>
+          <li><span class="chk">✓</span> Never pay again</li>
+          <li><span class="chk">✓</span> Early access to new features</li>
+          <li><span class="chk">✓</span> Founding member badge</li>
+          <li><span class="chk">✓</span> Priority support</li>
+        </ul>
+        <button class="btn-gs" onclick="toast('Lifetime deal coming soon! 🎉')">Get Lifetime — $149</button>
+      </div>
+
+    </div>
+
+    <!-- Plan comparison note -->
+    <div style="margin-top:24px;padding:16px 20px;background:var(--surf);border:1px solid var(--border);border-radius:14px;font-size:12px;color:var(--ink3);line-height:1.7">
+      <strong style="color:var(--ink2)">Demo accounts:</strong> Ash = Pro · Misty = Starter · Brock = Free — log in as each to see how plan features and scan limits work. Sharing is gated to Starter and above. Free users see an upgrade prompt when they try to share.
+    </div>
+  </div>
+</div>
+
+<!-- Upgrade Modal -->
+<div class="share-modal" id="upgrade-modal" onclick="if(event.target===this)closeUpgradeModal()">
+  <div class="share-modal-inner" style="max-width:340px">
+    <div style="font-size:32px;text-align:center;margin-bottom:12px">🔒</div>
+    <div class="share-modal-title" style="text-align:center">Paid Feature</div>
+    <div class="share-modal-sub" id="upgrade-modal-msg" style="text-align:center;margin-bottom:20px">Upgrade to share your cards</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+      <button onclick="closeUpgradeModal();nav('pricing',document.querySelector('.ntab:nth-child(4)'));toast('Starter — $7.99/mo coming soon!')" style="background:#2563EB;color:#fff;border:none;border-radius:10px;padding:12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer">
+        Starter — $7.99/mo · 25 scans + sharing
+      </button>
+      <button onclick="closeUpgradeModal();nav('pricing',document.querySelector('.ntab:nth-child(4)'));toast('Pro — $19/mo coming soon!')" style="background:#C8960C;color:#fff;border:none;border-radius:10px;padding:12px;font-family:'Outfit',sans-serif;font-weight:700;font-size:14px;cursor:pointer">
+        Pro — $19/mo · Unlimited + live prices
+      </button>
+    </div>
+    <button class="share-close" onclick="closeUpgradeModal()">Maybe later</button>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div class="share-modal" id="share-modal" onclick="if(event.target===this)closeShareModal()">
+  <div class="share-modal-inner">
+    <div class="share-modal-title" id="share-modal-title">Share Card</div>
+    <div class="share-modal-sub" id="share-modal-sub">Anyone with the link can view this</div>
+
+    <!-- Copy Link — PRIMARY CTA -->
+    <div id="share-link-box" style="background:var(--surf2);border:2px solid var(--gold);border-radius:12px;padding:12px 14px;margin-bottom:14px;display:flex;gap:8px;align-items:center">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Shareable Link</div>
+        <div id="share-link-text" style="font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500">Generating...</div>
+      </div>
+      <button id="copy-link-btn" onclick="copyShareLink()" style="background:var(--gold);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:.15s">
+        Copy Link
+      </button>
+    </div>
+
+    <!-- Share preview image -->
+    <div class="share-preview" id="share-preview">
+      <div class="share-preview-loading">Generating preview...</div>
+    </div>
+
+    <!-- Social + image options -->
+    <div class="share-destinations" style="grid-template-columns:repeat(4,1fr)">
+      <div class="share-dest" onclick="doShare('native')">
+        <div class="share-dest-icon">📱</div>
+        <div class="share-dest-label">Share</div>
+      </div>
+      <div class="share-dest" onclick="doShare('twitter')">
+        <div class="share-dest-icon">𝕏</div>
+        <div class="share-dest-label">X/Twitter</div>
+      </div>
+      <div class="share-dest" onclick="doShare('facebook')">
+        <div class="share-dest-icon">👥</div>
+        <div class="share-dest-label">Facebook</div>
+      </div>
+      <div class="share-dest" onclick="doShare('download')">
+        <div class="share-dest-icon">⬇️</div>
+        <div class="share-dest-label">Download</div>
+      </div>
+    </div>
+    <button class="share-close" onclick="closeShareModal()">Done</button>
+  </div>
+</div>
+
+<!-- PUBLIC VIEW — shown when ?share= or #share= in URL, no login needed -->
+<div id="public-view" style="display:none;min-height:100vh;background:#0E0E14;color:#fff;font-family:'Outfit',sans-serif">
+  <div style="max-width:600px;margin:0 auto;padding:32px 20px">
+    <!-- Brand header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:32px">
+      <div style="font-family:'Press Start 2P',cursive;font-size:14px;color:#FFD700;-webkit-text-stroke:3px #2B5CE6;paint-order:stroke fill;text-shadow:2px 2px 0 #1A3A9E;letter-spacing:1px">
+        CardsQuest
+      </div>
+      <button onclick="document.getElementById('public-view').style.display='none';document.getElementById('auth-view').style.display='flex'" style="background:#F5C518;color:#1a0800;border:none;border-radius:50px;padding:8px 18px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer">
+        Grade My Cards →
+      </button>
+    </div>
+    <div id="public-content"></div>
+    <!-- Marketing footer -->
+    <div style="margin-top:40px;padding:24px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:16px;text-align:center">
+      <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px">Grade your own Pokémon cards free</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px">PSA-accurate AI grading · Live market prices · Collection tracking</div>
+      <button onclick="document.getElementById('public-view').style.display='none';document.getElementById('auth-view').style.display='flex'" style="background:#F5C518;color:#1a0800;border:none;border-radius:10px;padding:12px 28px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer">
+        Start Grading Free →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden canvas for share image generation -->
+<canvas id="share-canvas" style="display:none"></canvas>
+
+<div class="streak-toast" id="streak-toast"><div class="st-icon" id="st-icon">🔥</div><div><div class="st-title" id="st-title">Streak active!</div><div class="st-sub" id="st-sub">Keep coming back daily</div></div></div>
+<div class="toast" id="toast-el"></div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   SMART CACHE SYSTEM
+   Three-tier caching to minimize API costs
+═══════════════════════════════════════════════ */
+const CACHE = {
+  // Tier 1: Permanent localStorage — game data never changes
+  // PokeAPI results, Pokémon list, species data
+  // Cost saving: ~100% — once fetched, never fetched again per device
+
+  // Tier 2: SessionStorage — search results within a session
+  // TCG card search results
+  // Cost saving: ~60% — same search in same session = 0 API calls
+
+  // Tier 3: TTL Cache — price data expires after 24h
+  // Market prices change daily, not by the minute
+  // Cost saving: ~90% — most users check the same card multiple times
+
+  PERMANENT_TTL: Infinity,
+  PRICE_TTL: 24 * 60 * 60 * 1000, // 24 hours
+  SESSION_TTL: null, // session only
+
+  stats: { hits: 0, misses: 0 },
+
+  _key(ns, key) { return `pg-cache-${ns}-${key}` },
+
+  get(ns, key) {
+    const raw = localStorage.getItem(this._key(ns, key));
+    if (!raw) {
+      // Try sessionStorage
+      const sess = sessionStorage.getItem(this._key(ns, key));
+      if (sess) {
+        this.stats.hits++;
+        this._updateStats();
+        return JSON.parse(sess).data;
+      }
+      this.stats.misses++;
+      this._updateStats();
+      return null;
+    }
+    const entry = JSON.parse(raw);
+    if (entry.ttl !== Infinity && Date.now() > entry.expires) {
+      localStorage.removeItem(this._key(ns, key));
+      this.stats.misses++;
+      this._updateStats();
+      return null;
+    }
+    this.stats.hits++;
+    this._updateStats();
+    return entry.data;
+  },
+
+  set(ns, key, data, ttl = this.PERMANENT_TTL) {
+    const entry = { data, ttl, expires: ttl === Infinity ? Infinity : Date.now() + ttl };
+    try {
+      if (ttl === null) {
+        sessionStorage.setItem(this._key(ns, key), JSON.stringify(entry));
+      } else {
+        localStorage.setItem(this._key(ns, key), JSON.stringify(entry));
+      }
+    } catch(e) {
+      // Storage full — clear old entries
+      this._evict();
+    }
+  },
+
+  _evict() {
+    // Remove expired entries to free space
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('pg-cache-')) {
+        try {
+          const entry = JSON.parse(localStorage.getItem(key));
+          if (entry.expires !== Infinity && Date.now() > entry.expires) {
+            localStorage.removeItem(key);
+          }
+        } catch(e) { localStorage.removeItem(key); }
+      }
+    }
+  },
+
+  _updateStats() {
+    const hits = this.stats.hits;
+    const misses = this.stats.misses;
+    const saved = (hits * 0.002).toFixed(3); // ~$0.002 per API call saved
+    const el1 = document.getElementById('cs-hits');
+    const el2 = document.getElementById('cs-miss');
+    const el3 = document.getElementById('cs-saved');
+    if (el1) el1.textContent = `${hits} cache hit${hits !== 1 ? 's' : ''}`;
+    if (el2) el2.textContent = `${misses} API call${misses !== 1 ? 's' : ''}`;
+    if (el3) el3.textContent = `~$${saved} saved`;
+  },
+
+  clear() {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('pg-cache-')) localStorage.removeItem(key);
+    }
+    sessionStorage.clear();
+    this.stats = { hits: 0, misses: 0 };
+    this._updateStats();
+    toast('Cache cleared');
+  }
+};
+
+/* ═══════════════════════════════════════════════
+   TYPE SYSTEM
+═══════════════════════════════════════════════ */
+const TYPE_STYLES = {
+  fire:     {bg:'#7B1515',color:'#FFBDBA',border:'#C03030',emoji:'🔥'},
+  water:    {bg:'#0D3060',color:'#B8D8FF',border:'#2060B0',emoji:'💧'},
+  grass:    {bg:'#0D4020',color:'#B0F0C0',border:'#20803A',emoji:'🌿'},
+  psychic:  {bg:'#3D1060',color:'#E8C8FF',border:'#7030A0',emoji:'🔮'},
+  electric: {bg:'#5A4000',color:'#FFE878',border:'#A07010',emoji:'⚡'},
+  fighting: {bg:'#7A1A1A',color:'#FFD0C8',border:'#B03030',emoji:'👊'},
+  poison:   {bg:'#3A0A50',color:'#DDA0FF',border:'#8030C0',emoji:'☠️'},
+  ground:   {bg:'#5A4010',color:'#F0D8A0',border:'#A08020',emoji:'🌍'},
+  rock:     {bg:'#404030',color:'#D8D0A0',border:'#807060',emoji:'🪨'},
+  bug:      {bg:'#2A4010',color:'#C0E080',border:'#608020',emoji:'🐛'},
+  ghost:    {bg:'#1A0A3A',color:'#C0A0E0',border:'#604080',emoji:'👻'},
+  steel:    {bg:'#303040',color:'#C8D0E0',border:'#607080',emoji:'⚙️'},
+  dragon:   {bg:'#1A0A5A',color:'#C0B0FF',border:'#5030C0',emoji:'🐉'},
+  dark:     {bg:'#1A1A2A',color:'#C0C0D8',border:'#404060',emoji:'🌑'},
+  fairy:    {bg:'#5A0A3A',color:'#FFB0E0',border:'#C03080',emoji:'🧚'},
+  ice:      {bg:'#0A3050',color:'#B0E8FF',border:'#2080C0',emoji:'❄️'},
+  colorless:{bg:'#383838',color:'#D8D8D8',border:'#666',emoji:'⬜'},
+  normal:   {bg:'#383838',color:'#D8D8D8',border:'#666',emoji:'⬜'},
+  flying:   {bg:'#1A2A5A',color:'#B0C8FF',border:'#3060C0',emoji:'🦅'},
+  lightning:{bg:'#5A4000',color:'#FFE878',border:'#A07010',emoji:'⚡'}, // TCG name for electric
+};
+
+function typeStyle(typeName) {
+  const t = (typeName||'').toLowerCase();
+  return TYPE_STYLES[t] || TYPE_STYLES.normal;
+}
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : '' }
+
+/* ═══════════════════════════════════════════════
+   POKÉMONTCG API SEARCH (pokemontcg.io)
+   — Returns real TCG cards with images, HP, attacks,
+     market prices, set info, rarity
+   — No API key needed for basic use (20k/day with key)
+   — Free: lower rate limit, still fine for grading app
+═══════════════════════════════════════════════ */
+const TCG_API = 'https://api.pokemontcg.io/v2';
+let tcgSearchTimer = null;
+let tcgApiKey = ''; // Optional — add yours for higher rate limits
+
+function onTCGSearch(val) {
+  clearTimeout(tcgSearchTimer);
+  const dd = document.getElementById('tcg-dropdown');
+  if (val.length < 2) { dd.classList.remove('show'); return; }
+  tcgSearchTimer = setTimeout(() => fetchTCGCards(val), 350);
+}
+
+async function fetchTCGCards(query) {
+  const cacheKey = query.toLowerCase().trim();
+  const cached = CACHE.get('tcg-search', cacheKey);
+  if (cached) {
+    renderTCGDropdown(cached);
+    return;
+  }
+
+  document.getElementById('tcg-spin').classList.add('show');
+  try {
+    const headers = tcgApiKey ? { 'X-Api-Key': tcgApiKey } : {};
+    const q = encodeURIComponent(`name:"${query}"`);
+    const res = await fetch(`${TCG_API}/cards?q=${q}&pageSize=12&orderBy=-set.releaseDate`, { headers });
+    const data = await res.json();
+    const cards = data.data || [];
+    // Cache for session only — search results
+    CACHE.set('tcg-search', cacheKey, cards, null);
+    renderTCGDropdown(cards);
+  } catch(e) {
+    toast('TCG API error — try again');
+  }
+  document.getElementById('tcg-spin').classList.remove('show');
+}
+
+function renderTCGDropdown(cards) {
+  const dd = document.getElementById('tcg-dropdown');
+  if (!cards.length) { dd.classList.remove('show'); return; }
+  dd.innerHTML = cards.map(c => {
+    const imgUrl = c.images?.small || '';
+    const price = c.tcgplayer?.prices?.holofoil?.market ||
+                  c.tcgplayer?.prices?.normal?.market ||
+                  c.tcgplayer?.prices?.['1stEditionHolofoil']?.market || null;
+    const priceStr = price ? `$${price.toFixed(2)}` : '';
+    return `<div class="drop-item" onclick="selectTCGCard(${JSON.stringify(JSON.stringify(c))})">
+      <img class="drop-sprite" src="${imgUrl}" alt="${c.name}" onerror="this.style.display='none'"/>
+      <div class="drop-info">
+        <div class="drop-name">${c.name}</div>
+        <div class="drop-sub">${c.set?.name || ''} · ${c.number || ''} · ${c.rarity || ''}</div>
+        ${priceStr ? `<div class="drop-price">${priceStr} TCGPlayer</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+  dd.classList.add('show');
+}
+
+let currentCardData = null;
+
+function selectTCGCard(cardJson) {
+  document.getElementById('tcg-dropdown').classList.remove('show');
+  const card = JSON.parse(cardJson);
+  currentCardData = { source: 'tcg', card };
+
+  // Cache the individual card permanently
+  CACHE.set('tcg-card', card.id, card);
+
+  applyTCGCardToShell(card);
+}
+
+function applyTCGCardToShell(card) {
+  // Name + HP
+  document.getElementById('d-name').textContent = card.name;
+  document.getElementById('d-hp').textContent = card.hp || '—';
+
+  // Evolution stage from supertype/subtypes
+  const stage = card.subtypes?.find(s => s.includes('Stage')) || 'Basic';
+  const evolvesFrom = card.evolvesFrom || '';
+  document.getElementById('d-stage').textContent = stage;
+  document.getElementById('d-evoline').textContent = evolvesFrom ? `Evolves from ${evolvesFrom}` : `${card.supertype || 'Pokémon'}`;
+
+  // Card image from TCG API (actual card scan)
+  const imgUrl = card.images?.large || card.images?.small || '';
+  if (imgUrl) {
+    document.getElementById('art-bg').style.display = 'none';
+    document.getElementById('art-official-layer').style.display = 'none';
+    document.getElementById('art-tcg-img').src = imgUrl;
+    document.getElementById('art-tcg-layer').style.display = 'flex';
+    document.getElementById('art-overlay-txt').textContent = '📸 Upload your card photo to grade';
+  }
+
+  // Set info
+  document.getElementById('d-set').textContent = `${card.set?.name || ''} · ${card.number || ''}/${card.set?.printedTotal || card.set?.total || '?'}`;
+  document.getElementById('d-rarity').textContent = card.rarity || '—';
+  document.getElementById('d-footer').textContent = `${card.set?.name || 'CardsQuest'} · ${card.number || '001'}/${card.set?.total || '?'} · ${card.artist || ''}`;
+
+  // Types
+  const primaryType = card.types?.[0]?.toLowerCase() || 'colorless';
+  const ts = typeStyle(primaryType);
+  const tb = document.getElementById('d-type');
+  tb.textContent = `${ts.emoji} ${cap(primaryType)}`;
+  tb.style.cssText = `background:${ts.bg};color:${ts.color};border:1px solid ${ts.border}`;
+
+  // Weaknesses / resistances from card data
+  const weak = card.weaknesses?.[0];
+  const resist = card.resistances?.[0];
+  const retreat = card.retreatCost?.length || 2;
+  document.getElementById('d-weak').textContent = weak ? `${weak.type} ${weak.value}` : '—';
+  document.getElementById('d-resist').textContent = resist ? `${resist.type} ${resist.value}` : '—';
+  document.getElementById('d-retreat').textContent = '⬤'.repeat(retreat);
+
+  // Market price from TCG API
+  const prices = card.tcgplayer?.prices;
+  const bestPrice = prices?.holofoil?.market || prices?.normal?.market || prices?.['1stEditionHolofoil']?.market || null;
+
+  // Show card info banner
+  const banner = document.getElementById('card-banner');
+  banner.classList.add('show');
+  document.getElementById('cib-img').src = card.images?.small || '';
+  document.getElementById('cib-name').textContent = card.name;
+  document.getElementById('cib-sub').textContent = `${card.set?.name || ''} · ${card.rarity || ''} · HP ${card.hp || '?'}`;
+  document.getElementById('cib-price').textContent = bestPrice ? `TCGPlayer market: $${bestPrice.toFixed(2)}` : 'No price data available';
+
+  // Price breakdown
+  if (prices) {
+    let priceHtml = '<div class="price-box"><div class="price-box-title">TCGPlayer Market Prices</div>';
+    const variants = [
+      ['1st Edition Holo', prices['1stEditionHolofoil']],
+      ['Holo Foil', prices.holofoil],
+      ['Normal', prices.normal],
+      ['Reverse Holo', prices.reverseHolofoil],
+    ];
+    variants.forEach(([label, p]) => {
+      if (p?.market) priceHtml += `<div class="price-row"><span class="price-src">${label}</span><span class="price-amt">$${p.market.toFixed(2)}</span></div>`;
+    });
+    if (bestPrice) priceHtml += `<div class="price-row"><span class="price-src">Best price <span class="cache-badge badge-live">LIVE</span></span><span class="price-amt" style="color:var(--green)">$${bestPrice.toFixed(2)}</span></div>`;
+    priceHtml += '</div>';
+    document.getElementById('price-area').innerHTML = priceHtml;
+
+    // Update g-val with market price
+    const gv = document.getElementById('g-val');
+    gv.textContent = `$${bestPrice?.toFixed(2) || '?'} market`;
+    gv.style.display = 'inline-block';
+  }
+
+  // Badges
+  document.getElementById('cib-badges').innerHTML = `
+    <span class="cib-badge badge-tcg">PokémonTCG API</span>
+    ${bestPrice ? '<span class="cib-badge badge-live">Live Price</span>' : ''}
+    <span class="cib-badge badge-cache">Cached</span>
+  `;
+
+  document.getElementById('grade-btn').disabled = false;
+  toast(`${card.name} (${card.set?.name}) loaded ✓`);
+}
+
+/* ═══════════════════════════════════════════════
+   POKEAPI SEARCH
+   — Game data: official artwork, types, evolution
+   — Permanently cached (never changes)
+═══════════════════════════════════════════════ */
+const POKEAPI = 'https://pokeapi.co/api/v2';
+let pokeSearchTimer = null;
+let allPokemonList = [];
+
+async function loadPokemonList() {
+  const cached = CACHE.get('pokeapi', 'pokemon-list');
+  if (cached) { allPokemonList = cached; return; }
+  try {
+    const res = await fetch(`${POKEAPI}/pokemon?limit=1025`);
+    const data = await res.json();
+    allPokemonList = data.results;
+    CACHE.set('pokeapi', 'pokemon-list', allPokemonList);
+  } catch(e) {}
+}
+loadPokemonList();
+
+function onPokeSearch(val) {
+  clearTimeout(pokeSearchTimer);
+  const dd = document.getElementById('poke-dropdown');
+  if (val.length < 2) { dd.classList.remove('show'); return; }
+  pokeSearchTimer = setTimeout(() => {
+    const q = val.toLowerCase();
+    const matches = allPokemonList.filter(p => p.name.startsWith(q)).slice(0, 8);
+    if (!matches.length) { dd.classList.remove('show'); return; }
+    dd.innerHTML = matches.map(p => {
+      const id = p.url.split('/').filter(Boolean).pop();
+      return `<div class="drop-item" onclick="selectPokemon('${p.name}','${id}')">
+        <img class="drop-sprite" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png" style="image-rendering:pixelated" onerror="this.style.display='none'"/>
+        <div class="drop-info"><div class="drop-name">${cap(p.name)}</div><div class="drop-sub">Loading...</div></div>
+      </div>`;
+    }).join('');
+    dd.classList.add('show');
+  }, 200);
+}
+
+async function selectPokemon(name, id) {
+  document.getElementById('poke-dropdown').classList.remove('show');
+  document.getElementById('poke-search').value = cap(name);
+  document.getElementById('poke-spin').classList.add('show');
+
+  // Check cache first — permanent since game data never changes
+  const cacheKey = `pokemon-${name}`;
+  let pkData = CACHE.get('pokeapi', cacheKey);
+
+  if (!pkData) {
+    try {
+      const [pkRes, spRes] = await Promise.all([
+        fetch(`${POKEAPI}/pokemon/${name}`),
+        fetch(`${POKEAPI}/pokemon-species/${name}`)
+      ]);
+      const pk = await pkRes.json();
+      const sp = await spRes.json();
+      const evRes = await fetch(sp.evolution_chain.url);
+      const ev = await evRes.json();
+      pkData = { pk, sp, ev };
+      // Permanently cache — game data will never change
+      CACHE.set('pokeapi', cacheKey, pkData);
+    } catch(e) {
+      toast('Could not load Pokémon data');
+      document.getElementById('poke-spin').classList.remove('show');
+      return;
+    }
+  }
+
+  applyPokeAPIToShell(pkData, name);
+  document.getElementById('poke-spin').classList.remove('show');
+}
+
+function getEvolutionStage(pokeName, chain) {
+  function findStage(node, stage) {
+    if (node.species.name === pokeName) return { stage, evolvesFrom: stage > 0 ? node : null };
+    for (const next of node.evolves_to) {
+      const result = findStage(next, stage + 1);
+      if (result) return result;
+    }
+    return null;
+  }
+  return findStage(chain.chain, 0) || { stage: 0, evolvesFrom: null };
+}
+
+function applyPokeAPIToShell({ pk, sp, ev }, name) {
+  currentCardData = { source: 'pokeapi', pk, sp };
+
+  const primaryType = pk.types[0].type.name;
+  const ts = typeStyle(primaryType);
+  const baseHp = pk.stats.find(s => s.stat.name === 'hp')?.base_stat || 50;
+  const tcgHp = Math.round((baseHp * 2) / 10) * 10;
+  const { stage, evolvesFrom } = getEvolutionStage(name, ev);
+  const stageLabels = ['Basic', 'Stage 1', 'Stage 2'];
+  const stageLabel = stageLabels[Math.min(stage, 2)] || 'Basic';
+  const evFrom = sp.evolves_from_species?.name;
+  const retreatDots = '⬤'.repeat(Math.min(4, Math.max(1, Math.round(pk.weight / 100))));
+  const artUrl = pk.sprites.other?.['official-artwork']?.front_default || pk.sprites.front_default || '';
+  const flavor = sp.flavor_text_entries.find(f => f.language.name === 'en')?.flavor_text?.replace(/[\n\f]/g, ' ') || '';
+
+  const WEAKNESS_MAP = {fire:'Water',water:'Electric',grass:'Fire',psychic:'Dark',electric:'Ground',fighting:'Psychic',normal:'Fighting',dragon:'Fairy',dark:'Fighting',fairy:'Poison',ice:'Fire',rock:'Water',ghost:'Ghost',poison:'Ground',ground:'Water',bug:'Fire',steel:'Fire',flying:'Electric'};
+  const RESIST_MAP = {fire:'Grass',water:'Fire',grass:'Water',psychic:'Fighting',electric:'Flying',fighting:'Bug',normal:'',dragon:'Fire',dark:'Ghost',fairy:'Fighting',ice:'Ice',rock:'Normal',ghost:'Normal',poison:'Grass',ground:'Poison',bug:'Grass',steel:'Normal',flying:'Grass'};
+
+  document.getElementById('d-name').textContent = cap(name);
+  document.getElementById('d-hp').textContent = tcgHp;
+  document.getElementById('d-stage').textContent = stageLabel;
+  document.getElementById('d-evoline').textContent = evFrom ? `Evolves from ${cap(evFrom)}` : 'Basic Pokémon';
+
+  if (artUrl) {
+    document.getElementById('art-bg').style.display = 'none';
+    document.getElementById('art-tcg-layer').style.display = 'none';
+    document.getElementById('art-official-img').src = artUrl;
+    document.getElementById('art-official-layer').style.display = 'flex';
+  }
+
+  document.getElementById('d-set').textContent = 'PokeAPI data — select set in TCG tab for full card';
+  document.getElementById('d-rarity').textContent = '—';
+  document.getElementById('d-footer').textContent = `CardsQuest AI · PokeAPI · 2025`;
+
+  const tb = document.getElementById('d-type');
+  tb.textContent = `${ts.emoji} ${cap(primaryType)}`;
+  tb.style.cssText = `background:${ts.bg};color:${ts.color};border:1px solid ${ts.border}`;
+
+  document.getElementById('d-weak').textContent = (WEAKNESS_MAP[primaryType] || '—') + ' ×2';
+  document.getElementById('d-resist').textContent = RESIST_MAP[primaryType] || '—';
+  document.getElementById('d-retreat').textContent = retreatDots;
+
+  const banner = document.getElementById('card-banner');
+  banner.classList.add('show');
+  document.getElementById('cib-img').src = artUrl;
+  document.getElementById('cib-name').textContent = cap(name);
+  document.getElementById('cib-sub').textContent = `HP ${tcgHp} · ${cap(primaryType)} type · ${stageLabel}${evFrom ? ` · Evolves from ${cap(evFrom)}` : ''}`;
+  document.getElementById('cib-price').textContent = flavor;
+  document.getElementById('cib-badges').innerHTML = `
+    <span class="cib-badge badge-pokeapi">PokeAPI</span>
+    <span class="cib-badge badge-cache">Permanently Cached</span>
+  `;
+
+  document.getElementById('grade-btn').disabled = false;
+  toast(`${cap(name)} loaded from PokeAPI ✓`);
+}
+
+/* ═══════════════════════════════════════════════
+   SEARCH MODE TOGGLE
+═══════════════════════════════════════════════ */
+let searchMode = 'tcg';
+function setSearchMode(mode, el) {
+  searchMode = mode;
+  document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('search-tcg').style.display = mode === 'tcg' ? 'block' : 'none';
+  document.getElementById('search-pokemon').style.display = mode === 'pokemon' ? 'block' : 'none';
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) {
+    document.getElementById('tcg-dropdown')?.classList.remove('show');
+    document.getElementById('poke-dropdown')?.classList.remove('show');
+  }
+});
+
+/* ═══════════════════════════════════════════════
+   STREAK SYSTEM
+═══════════════════════════════════════════════ */
+const STREAK_TIERS = [
+  {name:'none',label:'No Streak',icon:'🃏',min:0,fillClass:'sfill-none',chipClass:'none',badgeClass:'stb-none'},
+  {name:'bronze',label:'Bronze',icon:'🥉',min:7,fillClass:'sfill-bronze',chipClass:'bronze',badgeClass:'stb-bronze'},
+  {name:'gold',label:'Gold',icon:'🔥',min:14,fillClass:'sfill-gold',chipClass:'gold',badgeClass:'stb-gold'},
+  {name:'platinum',label:'Platinum',icon:'💎',min:30,fillClass:'sfill-platinum',chipClass:'platinum',badgeClass:'stb-platinum'},
+];
+const getTier=d=>{for(let i=STREAK_TIERS.length-1;i>=0;i--)if(d>=STREAK_TIERS[i].min)return STREAK_TIERS[i];return STREAK_TIERS[0]};
+const getNextTier=d=>{for(let i=0;i<STREAK_TIERS.length;i++)if(STREAK_TIERS[i].min>d)return STREAK_TIERS[i];return null};
+const calcProg=d=>{const t=getTier(d);const n=getNextTier(d);if(!n)return{pct:100,daysLeft:0};return{pct:Math.round(((d-t.min)/(n.min-t.min))*100),daysLeft:n.min-d}};
+const todayStr=()=>new Date().toISOString().slice(0,10);
+const buildHistory=days=>{const arr=[];const now=new Date();for(let i=days-1;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);arr.push(d.toISOString().slice(0,10))}return arr};
+function loadStreak(email){
+  const stored=localStorage.getItem('cq-streak-'+email);
+  if(stored)return JSON.parse(stored);
+  const defaults={'ash@pokégrade.app':{streak:14,lastVisit:todayStr(),history:buildHistory(14)},'misty@pokégrade.app':{streak:32,lastVisit:todayStr(),history:buildHistory(32)},'brock@pokégrade.app':{streak:5,lastVisit:todayStr(),history:buildHistory(5)}};
+  return defaults[email]||{streak:0,lastVisit:null,history:[]};
+}
+function saveStreak(email,data){localStorage.setItem('cq-streak-'+email,JSON.stringify(data))}
+function processLogin(email){
+  let data=loadStreak(email);const today=todayStr();
+  const yest=new Date();yest.setDate(yest.getDate()-1);const yStr=yest.toISOString().slice(0,10);
+  let isNewDay=false,streakBroken=false;
+  if(data.lastVisit===today){}
+  else if(data.lastVisit===yStr||!data.lastVisit){data.streak=(data.streak||0)+1;data.lastVisit=today;data.history=(data.history||[]);data.history.push(today);if(data.history.length>30)data.history=data.history.slice(-30);isNewDay=true}
+  else{streakBroken=true;data.streak=1;data.lastVisit=today;data.history=[today]}
+  saveStreak(email,data);return{data,isNewDay,streakBroken};
+}
+function updateStreakHeader(streak){
+  const tier=getTier(streak);const chip=document.getElementById('streak-chip');
+  chip.className='streak-chip '+tier.chipClass;
+  document.getElementById('si').textContent=tier.icon;
+  document.getElementById('sdays').textContent=streak+' day'+(streak===1?'':'s');
+  document.getElementById('stlbl').textContent=tier.label;
+}
+function showStreakToast(streak,isNewDay,streakBroken){
+  const tier=getTier(streak);const prev=getTier(Math.max(0,streak-1));const tierUp=isNewDay&&tier.name!==prev.name&&streak>0;
+  const t=document.getElementById('streak-toast');t.className='streak-toast '+tier.chipClass;
+  document.getElementById('st-icon').textContent=tier.icon;
+  if(streakBroken){document.getElementById('st-title').textContent='Streak reset — day 1!';document.getElementById('st-sub').textContent='Come back tomorrow to keep building'}
+  else if(tierUp){document.getElementById('st-title').textContent='🎉 '+tier.label+' tier unlocked!';document.getElementById('st-sub').textContent=streak+'-day streak — earned it, Trainer'}
+  else if(isNewDay){document.getElementById('st-title').textContent=streak+'-day streak! '+tier.icon;document.getElementById('st-sub').textContent=tier.name==='none'?'7 days to unlock Bronze':'Keep it up — '+tier.label+' Trainer'}
+  else{document.getElementById('st-title').textContent='Welcome back! '+tier.icon;document.getElementById('st-sub').textContent=streak+'-day '+tier.label+' streak'}
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),4500);
+}
+function renderStreakPanel(email){
+  const data=loadStreak(email);const streak=data.streak||0;const tier=getTier(streak);const next=getNextTier(streak);const prog=calcProg(streak);const today=todayStr();
+  const days=[];for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const dStr=d.toISOString().slice(0,10);days.push({dStr,dayNum:d.getDate(),isActive:(data.history||[]).includes(dStr),isToday:dStr===today})}
+  const dotHtml=days.map(d=>{let cls='streak-dot';if(d.isActive)cls+=' active-day '+tier.name;if(d.isToday&&!d.isActive)cls+=' today';return`<div class="${cls}">${d.dayNum}</div>`}).join('');
+  const milestonesHtml=STREAK_TIERS.filter(t=>t.name!=='none').map(t=>{const unlocked=streak>=t.min;const isCurrent=tier.name===t.name;let cls='milestone '+t.name+'-m';if(unlocked)cls+=' unlocked';if(isCurrent)cls+=' current';if(!unlocked)cls+=' locked';return`<div class="${cls}"><span class="milestone-icon">${t.icon}</span><div class="milestone-name">${t.label}</div><div class="milestone-req">${unlocked?'✓ Unlocked':t.min+' days'}</div></div>`}).join('');
+  const progressHtml=next?`<div class="streak-progress-wrap"><div class="streak-next-label"><span>Progress to ${next.label}</span><span>${prog.pct}%</span></div><div class="streak-track"><div class="streak-fill ${tier.fillClass}" style="width:${prog.pct}%"></div></div><div class="streak-next-hint"><strong>${prog.daysLeft} more day${prog.daysLeft===1?'':'s'}</strong> to unlock ${next.icon} ${next.label}</div></div>`:`<div class="streak-progress-wrap"><div class="streak-next-label"><span>Maximum tier</span><span>💎</span></div><div class="streak-track"><div class="streak-fill ${tier.fillClass}" style="width:100%"></div></div><div class="streak-next-hint"><strong>Platinum Trainer</strong> — you've reached the pinnacle</div></div>`;
+  document.getElementById('streak-panel-container').innerHTML=`<div class="streak-panel ${tier.name}" data-streak="${streak}"><div class="streak-panel-top"><div class="streak-panel-left"><div class="streak-big-icon ${tier.name}">${tier.icon}</div><div><div class="streak-count">${streak}</div><div class="streak-label">Day${streak===1?'':'s'} in a row</div><span class="streak-tier-badge ${tier.badgeClass}">${tier.icon} ${tier.label} Trainer</span></div></div>${progressHtml}</div><div class="streak-calendar"><div class="streak-cal-label">Last 14 days</div><div class="streak-dots">${dotHtml}</div></div><div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)"><div class="streak-cal-label" style="margin-bottom:10px">Collector tiers</div><div class="streak-milestones">${milestonesHtml}</div></div><div style="margin-top:16px;padding:12px 14px;background:var(--surf2);border-radius:10px;font-size:12px;color:var(--ink3);line-height:1.6">${tier.name==='none'?'Log in 7 days to unlock 🥉 Bronze.':tier.name==='bronze'?'Reach 14 days for 🔥 Gold. Pro users get bonus scans.':tier.name==='gold'?'Hit 30 days for 💎 Platinum. Unlocks priority grading.':'💎 Platinum — priority grading unlocked.'}</div><div style="margin-top:12px"><button class="btn-ghost btn-sm" onclick="CACHE.clear()">🗑 Clear cache</button></div></div>`;
+}
+
+/* ═══════════════════════════════════════════════
+   DEMO DATA
+═══════════════════════════════════════════════ */
+// pokemontcg.io card IDs — images fetched live from API on login
+// API returns working CDN URLs: data.images.small / data.images.large
+const DC={
+  'ash@pokégrade.app':[
+    {id:1,name:'Charizard',grade:9,value:2400,confidence:92,centering:9,corners:9,edges:8,surface:9,gradeLabel:'Mint',notes:'Near-mint. Excellent centering. One minor corner touch on back-left — consistent with PSA 9.',emoji:'🔥',type:'fire',setName:'Base Set',cardId:'base1-4',cardNumber:'4/102',rarity:'Rare Holo',tcgImg:'',hp:'120',dateAdded:Date.now()-86400000*5},
+    {id:2,name:'Pikachu',grade:8,value:8500,confidence:82,centering:8,corners:8,edges:7,surface:8,gradeLabel:'Near Mint-Mint',notes:'Incredibly rare promo. Light edge wear on top edge. No surface scratching.',emoji:'⚡',type:'electric',setName:'Scarlet & Violet 151',cardId:'sv3pt5-25',cardNumber:'025/165',rarity:'Common',tcgImg:'',hp:'60',dateAdded:Date.now()-86400000*2},
+    {id:3,name:'Mewtwo',grade:10,value:1850,confidence:94,centering:10,corners:10,edges:10,surface:10,gradeLabel:'Gem Mint',notes:'Gem Mint. Perfect centering, pristine corners and edges. No defects whatsoever.',emoji:'🔮',type:'psychic',setName:'Base Set',cardId:'base1-10',cardNumber:'10/102',rarity:'Rare Holo',tcgImg:'',hp:'60',dateAdded:Date.now()-86400000*1},
+    {id:4,name:'Raichu',grade:7,value:280,confidence:89,centering:7,corners:7,edges:7,surface:8,gradeLabel:'Near Mint',notes:'Near mint. Slight corner whitening on front-right. Surface clean.',emoji:'⚡',type:'electric',setName:'Base Set',cardId:'base1-14',cardNumber:'14/102',rarity:'Rare',tcgImg:'',hp:'80',dateAdded:Date.now()-86400000*9},
+    {id:5,name:'Ninetales',grade:6,value:145,confidence:87,centering:6,corners:6,edges:7,surface:6,gradeLabel:'Excellent-Mint',notes:'Excellent. Corner wear on two corners. Light surface scratching under direct light.',emoji:'🦊',type:'fire',setName:'Base Set',cardId:'base1-12',cardNumber:'12/102',rarity:'Rare Holo',tcgImg:'',hp:'80',dateAdded:Date.now()-86400000*14},
+  ],
+  'misty@pokégrade.app':[
+    {id:1,name:'Blastoise',grade:8,value:890,confidence:87,centering:8,corners:8,edges:7,surface:8,gradeLabel:'Near Mint-Mint',notes:'Very fine. Light corner wear. Surface clean under standard light.',emoji:'💧',type:'water',setName:'Base Set',cardId:'base1-2',cardNumber:'2/102',rarity:'Rare Holo',tcgImg:'',hp:'100',dateAdded:Date.now()-86400000*8},
+    {id:2,name:'Gyarados',grade:7,value:460,confidence:85,centering:7,corners:7,edges:8,surface:7,gradeLabel:'Near Mint',notes:'Near mint. Some corner whitening. Centering slightly off on reverse side.',emoji:'🌊',type:'water',setName:'Base Set',cardId:'base1-6',cardNumber:'6/102',rarity:'Rare Holo',tcgImg:'',hp:'130',dateAdded:Date.now()-86400000*12},
+    {id:3,name:'Vaporeon',grade:8,value:280,confidence:88,centering:8,corners:8,edges:8,surface:8,gradeLabel:'Near Mint-Mint',notes:'Very fine to excellent. Well-centered. Clean surface with minor print dot.',emoji:'💦',type:'water',setName:'Jungle',cardId:'jungle-12',cardNumber:'12/64',rarity:'Rare Holo',tcgImg:'',hp:'80',dateAdded:Date.now()-86400000*6},
+    {id:4,name:'Starmie',grade:9,value:120,confidence:90,centering:9,corners:9,edges:9,surface:8,gradeLabel:'Mint',notes:'Mint condition. One minor blemish only visible under strong light.',emoji:'⭐',type:'water',setName:'Base Set',cardId:'base1-64',cardNumber:'64/102',rarity:'Uncommon',tcgImg:'',hp:'60',dateAdded:Date.now()-86400000*3},
+  ],
+  'brock@pokégrade.app':[
+    {id:1,name:'Golem',grade:7,value:95,confidence:86,centering:7,corners:7,edges:8,surface:7,gradeLabel:'Near Mint',notes:'Near mint. Moderate wear on two corners. Surface has minor scratching.',emoji:'🪨',type:'fighting',setName:'Fossil',cardId:'fossil-8',cardNumber:'8/62',rarity:'Rare Holo',tcgImg:'',hp:'80',dateAdded:Date.now()-86400000*10},
+    {id:2,name:'Onix',grade:6,value:45,confidence:89,centering:6,corners:6,edges:7,surface:6,gradeLabel:'Excellent-Mint',notes:'Excellent. Corner wear visible. Surface has minor scratching under direct light.',emoji:'🪨',type:'fighting',setName:'Base Set',cardId:'base1-56',cardNumber:'56/102',rarity:'Common',tcgImg:'',hp:'90',dateAdded:Date.now()-86400000*15},
+    {id:3,name:'Geodude',grade:5,value:12,confidence:92,centering:5,corners:5,edges:5,surface:6,gradeLabel:'Excellent',notes:'Excellent. Moderate wear across all surfaces consistent with played condition.',emoji:'🪨',type:'fighting',setName:'Base Set',cardId:'base1-46',cardNumber:'46/102',rarity:'Common',tcgImg:'',hp:'40',dateAdded:Date.now()-86400000*20},
+  ]
+};
+
+// ── LIVE IMAGE FETCHER ──
+// Fetches real card image URLs from pokemontcg.io API
+// Each card cached individually and permanently — survives collection resets
+async function fetchMissingCardImages(email) {
+  const coll = colls[email];
+  if (!coll) { renderColl(); return; }
+
+  // Pre-fill any card that has a cardId with its CDN URL pattern immediately
+  // images.pokemontcg.io is the image CDN — works as a plain img src even if the API is down
+  // Pattern: setId is first part of cardId before the dash, number is the rest
+  coll.forEach(c => {
+    if (!c.tcgImg && c.cardId) {
+      const parts = c.cardId.split('-');
+      if (parts.length >= 2) {
+        const setId = parts[0];
+        const num = parts.slice(1).join('-'); // handles ids like 'base1-4'
+        c.tcgImg = `https://images.pokemontcg.io/${setId}/${num}.png`;
+      }
+    }
+  });
+
+  colls[email] = coll;
+  persist();
+  renderColl(); // render immediately with CDN urls
+
+  // Also try the API in background to get better quality large images
+  // Replace CDN small with API large URL if available — silent, no shimmer impact
+  const stillMissing = coll.filter(c => c.cardId && !CACHE.get('card-img-hi', c.cardId));
+  if (!stillMissing.length) return;
+
+  // 5 second timeout per card — if API is slow/unreachable, CDN url already shows
+  await Promise.all(stillMissing.map(async c => {
+    const cached = CACHE.get('card-img-hi', c.cardId);
+    if (cached) { c.tcgImg = cached; return; }
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 5000);
+      const r = await fetch(`https://api.pokemontcg.io/v2/cards/${c.cardId}`, {signal: controller.signal});
+      clearTimeout(timer);
+      if (r.ok) {
+        const d = await r.json();
+        const url = d.data?.images?.large || d.data?.images?.small || '';
+        if (url) {
+          c.tcgImg = url;
+          CACHE.set('card-img-hi', c.cardId, url);
+        }
+      }
+    } catch(e) {
+      // API unreachable or timed out — CDN URL already in place, no problem
+    }
+  }));
+
+  colls[email] = coll;
+  persist();
+  renderColl(); // re-render with hi-res if API came back
+}
+
+/* STATE */
+let curUser=null,scansUsed=0,curFile=null,curResult=null,curImgSrc=null;
+const FREE=3;let nxtId=200;
+
+/* ── PLAN SYSTEM ── */
+// Plans: free | starter | pro | lifetime
+// In production these would be verified server-side via Stripe webhook
+const PLANS={
+  free:    {name:'Free',    scans:3,   price:0,    sharing:false, livePrices:false,  priority:false},
+  starter: {name:'Starter', scans:25,  price:7.99, sharing:true,  livePrices:false,  priority:false},
+  pro:     {name:'Pro',     scans:Infinity, price:19, sharing:true, livePrices:true, priority:true},
+  lifetime:{name:'Lifetime',scans:Infinity, price:149,sharing:true, livePrices:true, priority:true},
+};
+
+function getUserPlan(email){
+  if(!email)return'free';
+  // Demo accounts get preset plans to show the feature gates working
+  const demoPlan={'ash@pokégrade.app':'pro','misty@pokégrade.app':'starter','brock@pokégrade.app':'free'};
+  if(demoPlan[email])return demoPlan[email];
+  return localStorage.getItem('cq-plan-'+email)||'free';
+}
+
+function getPlanObj(email){return PLANS[getUserPlan(email)]||PLANS.free;}
+
+function getScanLimit(email){return getPlanObj(email).scans;}
+
+function canShare(email){return getPlanObj(email).sharing;}
+
+// Show upgrade modal with specific message
+function showUpgradePrompt(feature){
+  const plan=getUserPlan(curUser?.email);
+  const msg=plan==='free'
+    ?`Sharing cards requires a Starter or Pro plan. Upgrade for $7.99/mo to unlock sharing + 25 scans.`
+    :plan==='starter'
+    ?`This feature requires Pro. Upgrade to Pro for unlimited scans, live pricing and priority grading.`
+    :`Upgrade to unlock ${feature}.`;
+  document.getElementById('upgrade-modal-msg').textContent=msg;
+  document.getElementById('upgrade-modal').classList.add('show');
+}
+
+function closeUpgradeModal(){document.getElementById('upgrade-modal').classList.remove('show');}
+function gradeColor(g){if(g>=10)return'#FFD700';if(g>=9)return'#16A34A';if(g>=7)return'#2563EB';if(g>=5)return'#D97706';return'#DC2626';}
+
+let users=JSON.parse(localStorage.getItem('cq-u')||'{}');
+let colls=JSON.parse(localStorage.getItem('cq-c')||'{}');
+const DPW={'ash@pokégrade.app':'pikachu123','misty@pokégrade.app':'starmie123','brock@pokégrade.app':'onix123'};
+const DNM={'ash@pokégrade.app':'Ash Ketchum','misty@pokégrade.app':'Misty Waterflower','brock@pokégrade.app':'Brock Harrison'};
+const DC_VERSION = 'v8';
+
+// Hash demo passwords on first run so they're never stored plain
+(async()=>{
+  for(const [e,p] of Object.entries(DPW)){
+    if(!users[e])users[e]={password:p,name:DNM[e]}; // temp plain
+    // Upgrade to hash if still plain
+    const stored=users[e].password;
+    if(stored===p){
+      const hash=await hashPw(p);
+      users[e].password=hash;
+    }
+  }
+  persist();
+})();
+
+// For demo accounts: ensure collection exists with cardIds, but NEVER wipe tcgImg values already fetched
+Object.entries(DPW).forEach(([e,p])=>{
+  if(!users[e])users[e]={password:p,name:DNM[e]};
+  const verKey='cq-dc-ver-'+e;
+  if(localStorage.getItem(verKey)!==DC_VERSION){
+    // First time on this version — seed the collection from DC template
+    // But preserve any tcgImg values already stored
+    const existing=colls[e]||[];
+    const fresh=JSON.parse(JSON.stringify(DC[e]||[]));
+    // Merge: keep existing tcgImg if present
+    const imgMap={};
+    existing.forEach(c=>{if(c.cardId&&c.tcgImg)imgMap[c.cardId]=c.tcgImg});
+    fresh.forEach(c=>{if(imgMap[c.cardId])c.tcgImg=imgMap[c.cardId]});
+    colls[e]=fresh;
+    localStorage.setItem(verKey,DC_VERSION);
+  }
+});
+function persist(){try{localStorage.setItem('cq-u',JSON.stringify(users));localStorage.setItem('cq-c',JSON.stringify(colls))}catch(e){}}
+persist();
+function getColl(){return curUser&&colls[curUser.email]?colls[curUser.email]:[]}
+
+/* AUTH */
+function atab(t,el){document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('active'));el.classList.add('active');document.getElementById('f-login').style.display=t==='login'?'block':'none';document.getElementById('f-signup').style.display=t==='signup'?'block':'none';document.getElementById('aerr').classList.remove('show')}
+function showErr(m){const e=document.getElementById('aerr');e.textContent=m;e.classList.add('show')}
+// ── SECURITY HELPERS ──
+// SHA-256 hash via Web Crypto API — passwords never stored plain
+async function hashPw(pw){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pw));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// HTML sanitiser — strips tags from any string before injecting into innerHTML
+function sanitise(str){
+  if(!str)return'';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+async function doLogin(){
+  const em=document.getElementById('li-em').value.trim().toLowerCase();
+  const pw=document.getElementById('li-pw').value;
+  if(!em||!pw){showErr('Fill in all fields');return}
+  if(!users[em]){showErr('No account found');return}
+  const hash=await hashPw(pw);
+  // Support both hashed and legacy plain-text passwords (auto-upgrades on login)
+  const stored=users[em].password;
+  const match=(stored===hash)||(stored===pw);
+  if(!match){showErr('Incorrect password');return}
+  // Upgrade plain-text password to hash silently
+  if(stored===pw){users[em].password=hash;persist();}
+  loginOk(em,users[em].name);
+}
+
+async function doSignup(){
+  const nm=document.getElementById('su-nm').value.trim();
+  const em=document.getElementById('su-em').value.trim().toLowerCase();
+  const pw=document.getElementById('su-pw').value;
+  if(!nm||!em||!pw){showErr('Fill in all fields');return}
+  if(pw.length<6){showErr('Password needs 6+ chars');return}
+  if(users[em]){showErr('Account exists — try logging in');return}
+  // Basic email format check
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){showErr('Enter a valid email');return}
+  const hash=await hashPw(pw);
+  users[em]={password:hash,name:nm};
+  colls[em]=[];persist();
+  loginOk(em,nm);
+}
+function qlogin(em,nm){loginOk(em,nm)}
+function loginOk(em,nm){
+  curUser={email:em,name:nm};scansUsed=parseInt(localStorage.getItem('cq-s-'+em)||'0');
+  const{data,isNewDay,streakBroken}=processLogin(em);
+  document.getElementById('auth-view').style.display='none';
+  document.getElementById('main-view').style.display='block';
+  document.getElementById('u-av').textContent=nm.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('u-nm').textContent=nm.split(' ')[0];
+  document.getElementById('coll-sub').textContent=nm+"'s graded cards";
+  // Show plan badge
+  const planKey=getUserPlan(em);
+  const planColors={free:'#A8A29E',starter:'#2563EB',pro:'#C8960C',lifetime:'#7C3AED'};
+  const planEl=document.getElementById('plan-badge');
+  if(planEl){planEl.textContent=PLANS[planKey].name;planEl.style.color=planColors[planKey];planEl.style.background=planColors[planKey]+'18';planEl.style.borderColor=planColors[planKey]+'44';}
+  updateUsage();updateStreakHeader(data.streak||0);
+  fetchMissingCardImages(em);
+  setTimeout(()=>showStreakToast(data.streak||0,isNewDay,streakBroken),600);
+}
+function updateUsage(){
+  const limit=getScanLimit(curUser?.email);
+  const isUnlimited=limit===Infinity;
+  const rem=isUnlimited?'∞':Math.max(0,limit-scansUsed);
+  const pct=isUnlimited?0:Math.min((scansUsed/limit)*100,100);
+  const ut=document.getElementById('utxt');if(ut)ut.textContent=isUnlimited?'Unlimited':rem+' / '+limit;
+  const uf=document.getElementById('ufill');if(uf){uf.style.width=pct+'%';uf.className='ufill'+(!isUnlimited&&scansUsed>=limit?' full':'');}
+}
+function doLogout(){curUser=null;curFile=null;curResult=null;curImgSrc=null;currentCardData=null;clearAll();document.getElementById('main-view').style.display='none';document.getElementById('auth-view').style.display='block';document.getElementById('li-em').value='';document.getElementById('li-pw').value='';document.getElementById('aerr').classList.remove('show');}
+function nav(nm,el){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));document.getElementById('screen-'+nm).classList.add('active');if(el)el.classList.add('active');if(nm==='collection'&&curUser)fetchMissingCardImages(curUser.email);if(nm==='streak'&&curUser)renderStreakPanel(curUser.email);}
+
+/* FILE */
+function onFile(e){const f=e.target.files[0];if(f)loadFile(f)}
+function loadFile(f){curFile=f;const rd=new FileReader();rd.onload=ev=>{curImgSrc=ev.target.result;document.getElementById('art-photo-img').src=curImgSrc;document.getElementById('art-photo-layer').style.display='flex';document.getElementById('art-overlay-txt').textContent='📸 Change photo';document.getElementById('grade-btn').disabled=false;resetGradeResult()};rd.readAsDataURL(f)}
+
+function resetGradeResult(){document.getElementById('g-num').textContent='—';document.getElementById('g-lbl').textContent='Ready to analyze';document.getElementById('g-desc').textContent='Click Analyze & Grade';document.getElementById('g-val').style.display='none';document.getElementById('stat-box').style.display='none';document.getElementById('notes-area').innerHTML='';document.getElementById('save-area').style.display='none';document.getElementById('conf-b').textContent='';curResult=null}
+
+function clearAll(){
+  curFile=null;curResult=null;curImgSrc=null;currentCardData=null;
+  ['art-tcg-layer','art-official-layer','art-photo-layer'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('art-bg').style.display='flex';
+  document.getElementById('art-emoji').textContent='🃏';
+  document.getElementById('file-in').value='';
+  document.getElementById('tcg-search').value='';document.getElementById('poke-search').value='';
+  document.getElementById('grade-btn').disabled=true;
+  document.getElementById('card-banner').classList.remove('show');
+  document.getElementById('price-area').innerHTML='';
+  resetGradeResult();
+  document.getElementById('g-lbl').textContent='Awaiting scan';document.getElementById('g-desc').textContent='Search + upload to grade';
+  document.getElementById('d-name').textContent='Search a card';document.getElementById('d-hp').textContent='—';
+  document.getElementById('d-stage').textContent='Basic';document.getElementById('d-evoline').textContent='Search to load data';
+  document.getElementById('d-set').textContent='No set loaded';document.getElementById('d-rarity').textContent='—';
+  document.getElementById('d-type').textContent='No type';document.getElementById('d-type').style.cssText='background:#383838;color:#D8D8D8;border:1px solid #666';
+  document.getElementById('d-weak').textContent='—';document.getElementById('d-resist').textContent='—';document.getElementById('d-retreat').textContent='⬤⬤';
+  document.getElementById('d-footer').textContent='CardsQuest AI · 2025';
+  document.getElementById('art-overlay-txt').textContent='📸 Upload your card photo to grade';
+}
+
+/* GRADE — routes through Netlify serverless proxy so API key stays server-side */
+const LM=['Applying PSA centering tolerance...','Inspecting corners under 10x...','Checking all four edges...','Evaluating surface condition...','Cross-referencing PSA rubric...','Finalizing grade...'];
+
+async function doGrade(){
+  if(!curFile){toast('Upload a card photo first');return}
+  const scanLimit=getScanLimit(curUser?.email);
+  if(scansUsed>=scanLimit){
+    // Show upgrade prompt based on current plan
+    document.getElementById('save-area').style.display='none';
+    const planKey=getUserPlan(curUser?.email);
+    const upMsg=planKey==='free'
+      ?{title:'3 free scans used',body:'Upgrade to Starter for 25 scans/month + card sharing for just $7.99/mo',btn:'Upgrade to Starter — $7.99/mo'}
+      :planKey==='starter'
+      ?{title:'25 scans used this month',body:'Upgrade to Pro for unlimited grading, live market prices, and priority processing',btn:'Upgrade to Pro — $19/mo'}
+      :{title:'Monthly scans used',body:'Your scans reset at the start of next month',btn:'View Pricing'};
+    document.getElementById('notes-area').innerHTML=`
+      <div style="background:#FEF3C7;border:1.5px solid rgba(217,119,6,0.3);border-radius:10px;padding:14px;margin-top:12px;text-align:center">
+        <div style="font-size:15px;font-weight:700;color:#92400E;margin-bottom:6px">${upMsg.title}</div>
+        <div style="font-size:12px;color:#78350F;margin-bottom:12px">${upMsg.body}</div>
+        <button onclick="nav('pricing',document.querySelector('.ntab:nth-child(4)'))" style="background:#C8960C;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer">${upMsg.btn} →</button>
+      </div>`;
+    return;
+  }
+  document.getElementById('loading-w').classList.add('show');
+  document.getElementById('grade-btn').disabled=true;
+  document.getElementById('stat-box').style.display='none';
+  document.getElementById('save-area').style.display='none';
+  document.getElementById('notes-area').innerHTML='';
+  let mi=0;const iv=setInterval(()=>{document.getElementById('ltxt').textContent=LM[mi%LM.length];mi++},1100);
+  try{
+    const b64=await toB64(curFile);const mime=curFile.type||'image/jpeg';
+    const cardName=document.getElementById('d-name').textContent;
+    const cardSet=document.getElementById('d-set').textContent;
+    const cardType=document.getElementById('d-type').textContent;
+    const cardHp=document.getElementById('d-hp').textContent;
+    const cardInfo=currentCardData?`Card: ${cardName}, Set: ${cardSet}, Type: ${cardType}, HP: ${cardHp}.`:`Card: ${cardName}.`;
+    const prompt=`You are a professional Pokémon card grader with PSA expertise. ${cardInfo}\n\nGrade this card using PSA standards:\n- Centering: 55/45 tolerance for PSA 9, 60/40 for PSA 8\n- Corners: zero whitening for PSA 10, one touch for PSA 9\n- Edges: perfectly smooth for PSA 10\n- Surface: no scratches for PSA 10, very faint for PSA 9\n- Lowest subgrade = grade floor\n\nRespond ONLY with JSON (no markdown):\n{"grade":<1-10>,"gradeLabel":"<Gem Mint|Mint|Near Mint-Mint|Near Mint|Excellent-Mint|Excellent|Very Good-Excellent|Very Good|Good|Poor>","confidence":<50-99>,"estimatedValue":<USD>,"centering":<1-10>,"corners":<1-10>,"edges":<1-10>,"surface":<1-10>,"notes":"<2-3 sentences on condition>"}`;
+
+    // Call Netlify serverless proxy — API key stored securely on server
+    const res=await fetch('/.netlify/functions/grade',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:b64,mimeType:mime,prompt})
+    });
+    if(!res.ok){
+      const errText=await res.text();
+      throw new Error(errText||'Server error '+res.status);
+    }
+    const d=await res.json();
+    if(d.error)throw new Error(d.error);
+    const p=JSON.parse((d.content||d.text||'').replace(/```json|```/g,'').trim());
+    clearInterval(iv);
+    scansUsed++;
+    localStorage.setItem('cq-s-'+curUser.email,scansUsed);
+    updateUsage();
+    showResult(p);
+  }catch(err){
+    clearInterval(iv);
+    // Friendly error message
+    const msg=err.message||'';
+    if(msg.includes('fetch')||msg.includes('network')||msg.includes('Failed')){
+      toast('Could not reach grading server — deploy to Netlify to enable grading');
+    } else {
+      toast('Grading error: '+msg.slice(0,60));
+    }
+    document.getElementById('grade-btn').disabled=false;
+  }
+  document.getElementById('loading-w').classList.remove('show');
+}
+
+function gc(n){return n>=9?'#16A34A':n>=7?'#2563EB':n>=5?'#D97706':'#DC2626'}
+function gbc(n){return n>=8?'sf-hi':'sf-mid'}
+function showResult(p){
+  curResult=p;const g=Math.round(p.grade);
+  document.getElementById('g-num').textContent=g;document.getElementById('g-lbl').textContent=p.gradeLabel||'';document.getElementById('g-desc').textContent='Confidence: '+p.confidence+'%';
+  // Use TCG price if available, otherwise AI estimate
+  const tcgPrice=currentCardData?.source==='tcg' ? (()=>{const prices=currentCardData.card?.tcgplayer?.prices;return prices?.holofoil?.market||prices?.normal?.market||null})() : null;
+  const displayVal=tcgPrice||p.estimatedValue;
+  const ve=document.getElementById('g-val');ve.textContent='$'+Number(displayVal).toFixed(2)+(tcgPrice?' TCGPlayer live':' AI est.');ve.style.display='inline-block';
+  document.getElementById('conf-b').textContent='Conf: '+p.confidence+'%';
+  document.getElementById('stat-rows').innerHTML=[['Centering',p.centering],['Corners',p.corners],['Edges',p.edges],['Surface',p.surface]].map(([l,v])=>{const n=Math.round(v);return`<div class="pc-srow"><span class="pc-sname">${l}</span><div class="pc-sbg"><div class="pc-sfill ${gbc(n)}" style="width:${n*10}%"></div></div><span class="pc-sval">${n}</span></div>`}).join('');
+  document.getElementById('stat-box').style.display='block';
+  if(p.notes)document.getElementById('notes-area').innerHTML=`<div class="nbox">${sanitise(p.notes)}</div>`;
+  document.getElementById('save-area').style.display='block';document.getElementById('grade-btn').disabled=false;
+}
+function toB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=()=>rej(new Error('fail'));r.readAsDataURL(f)})}
+
+function saveCard(){
+  if(!curResult||!curUser)return;
+  const name=document.getElementById('d-name').textContent||'Unnamed Card';
+  const tcgPrice=currentCardData?.source==='tcg'?(()=>{const p=currentCardData.card?.tcgplayer?.prices;return p?.holofoil?.market||p?.normal?.market||null})():null;
+  const coll=getColl();
+  coll.unshift({id:nxtId++,name,
+    grade:Math.round(curResult.grade),value:tcgPrice||Number(curResult.estimatedValue),
+    confidence:curResult.confidence,centering:curResult.centering,corners:curResult.corners,edges:curResult.edges,surface:curResult.surface,
+    notes:curResult.notes||'',gradeLabel:curResult.gradeLabel||'',
+    type:(currentCardData?.source==='tcg'?currentCardData.card?.types?.[0]?.toLowerCase():currentCardData?.pk?.types?.[0]?.type?.name)||'normal',
+    setName:document.getElementById('d-set').textContent,rarity:document.getElementById('d-rarity').textContent,
+    tcgImg:document.getElementById('art-tcg-img').src||'',
+    artUrl:document.getElementById('art-official-img').src||'',
+    imgSrc:curImgSrc&&curImgSrc.length<500000?curImgSrc:null,
+    livePrice:!!tcgPrice,emoji:'🃏',dateAdded:Date.now()
+  });
+  colls[curUser.email]=coll;persist();toast('Saved to collection ✓');clearAll();
+}
+
+/* COLLECTION */
+function bfc(g){return g>=9?'#16A34A':g>=7?'#2563EB':g>=5?'#D97706':'#DC2626'}
+function bbc(g){return g>=9?'rgba(22,163,74,0.1)':g>=7?'rgba(37,99,235,0.08)':g>=5?'rgba(217,119,6,0.1)':'rgba(220,38,38,0.1)'}
+function ptc(g){return g>=9?'#14532D':g>=7?'#1E3A8A':g>=5?'#78350F':'#7F1D1D'}
+function pbc(g){return g>=9?'#DCFCE7':g>=7?'#DBEAFE':g>=5?'#FEF3C7':'#FEE2E2'}
+
+function renderBarChart(coll){
+  const s=[...coll].sort((a,b)=>b.value-a.value);const mx=s.length?s[0].value:1;
+  document.getElementById('bar-chart').innerHTML=!s.length?`<p style="font-size:13px;color:var(--ink3);text-align:center;padding:14px">No cards yet</p>`:s.map(c=>{const pct=Math.max(Math.round((c.value/mx)*100),8);const fc=bfc(c.grade);const bg=bbc(c.grade);const live=c.livePrice?`<span class="cache-badge badge-live" style="margin-left:4px">live</span>`:'';return`<div class="bar-row"><div class="bar-name">${c.name}</div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${bg};border-left:3px solid ${fc}"><span class="bar-fill-lbl" style="color:${fc}">${c.gradeLabel||'PSA '+c.grade}</span></div></div><div class="bar-val">$${Number(c.value).toFixed(2)}${live}</div><div><span class="psa-badge" style="background:${pbc(c.grade)};color:${ptc(c.grade)}">PSA ${c.grade}</span></div></div>`}).join('')
+}
+
+function renderColl(){
+  const coll=getColl();
+  const total=coll.reduce((s,c)=>s+(c.value||0),0);
+  const avg=coll.length?(coll.reduce((s,c)=>s+c.grade,0)/coll.length).toFixed(1):'—';
+  const top=[...coll].sort((a,b)=>b.value-a.value)[0];
+  const best=[...coll].sort((a,b)=>b.grade-a.grade)[0];
+  document.getElementById('cstats').innerHTML=`
+    <div class="cstat"><div class="cstat-n">${coll.length}</div><div class="cstat-l">Cards</div></div>
+    <div class="cstat"><div class="cstat-n" style="color:var(--green)">$${total.toFixed(2)}</div><div class="cstat-l">Total Value</div></div>
+    <div class="cstat"><div class="cstat-n">${avg}</div><div class="cstat-l">Avg Grade</div></div>
+    <div class="cstat"><div class="cstat-n" style="font-size:13px;line-height:1.3;padding-top:3px">${top?top.name.split(' ').slice(0,2).join(' '):'—'}</div><div class="cstat-l">Top Value</div></div>
+    <div class="cstat"><div class="cstat-n" style="font-size:13px;padding-top:3px">${best?'PSA '+best.grade:'—'}</div><div class="cstat-l">Best Grade</div></div>`;
+  renderBarChart(coll);
+  if(!coll.length){
+    document.getElementById('coll-grid').innerHTML=`<div class="empty-state"><div style="font-size:38px;margin-bottom:10px">📦</div><h3>No cards yet</h3><p style="font-size:11px">Grade your first card and save it here</p></div>`;
+    return;
+  }
+  document.getElementById('coll-grid').innerHTML=coll.map(c=>{
+    const col=gc(c.grade);
+    const tc=ptc(c.grade);
+    const bc=pbc(c.grade);
+    const g=Math.round(c.grade);
+    const slabColor=g>=10?'cc-slab-10':g>=9?'cc-slab-9':g>=7?'cc-slab-8':g>=5?'cc-slab-6':'cc-slab-5';
+    const ds=new Date(c.dateAdded).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const liveDot=c.livePrice?`<span class="cache-badge badge-live" style="margin-left:3px">live</span>`:'';
+
+    // ── Thumbnail priority: user photo > live TCG scan > type-color fallback ──
+    let cardImg;
+    if(c.imgSrc){
+      // User's own uploaded photo
+      cardImg=`
+        <div class="cc-photo-wrap">
+          <img src="${c.imgSrc}" alt="${c.name}"/>
+          <div class="cc-psa-slab ${slabColor}">
+            <div class="cc-psa-slab-label">PSA</div>
+            <div class="cc-psa-slab-num">${g}</div>
+          </div>
+        </div>`;
+    } else if(c.tcgImg && c.tcgImg.length>10){
+      // Real TCG card scan from pokemontcg.io API
+      cardImg=`
+        <div class="cc-img-wrap">
+          <img
+            class="cc-tcg-card"
+            src="${c.tcgImg}"
+            alt="${c.name}"
+            loading="lazy"
+            onerror="this.parentElement.innerHTML=cardErrHtml(${g},'${c.emoji||'🃏'}','${c.name.replace(/'/g,"\\'").replace(/"/g,"&quot;")}','${c.setName||''}')"
+          />
+          <div class="cc-psa-slab ${slabColor}">
+            <div class="cc-psa-slab-label">PSA</div>
+            <div class="cc-psa-slab-num">${g}</div>
+          </div>
+        </div>`;
+    } else {
+      // No tcgImg and no cardId — render type-color fallback card
+      const ts2=typeStyle(c.type||'normal');
+      cardImg=`
+        <div class="cc-img-wrap" style="background:${ts2.bg};flex-direction:column;gap:6px">
+          <div style="font-size:46px;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.4))">${c.emoji||'🃏'}</div>
+          <div style="font-size:11px;font-weight:700;color:${ts2.color};text-align:center;padding:0 8px">${c.name}</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.4)">${c.setName||''}</div>
+          <div class="cc-psa-slab ${slabColor}" style="position:static;margin-top:4px">
+            <div class="cc-psa-slab-label">PSA</div>
+            <div class="cc-psa-slab-num">${g}</div>
+          </div>
+        </div>`;
+    }
+
+    return`<div class="cc">
+      ${cardImg}
+      <div class="cc-body">
+        <div class="cc-name">${c.name}</div>
+        <div class="cc-meta">
+          <span class="grade-pill" style="background:${bc};color:${tc}">PSA ${g} · ${c.gradeLabel||''}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span class="cc-v">$${Number(c.value).toFixed(2)}${liveDot}</span>
+          <span style="font-size:10px;color:var(--ink3)">${ds}</span>
+        </div>
+        ${c.setName&&c.setName!=='No set loaded'?`<div class="cc-set">${c.setName}${c.cardNumber?' · '+c.cardNumber:''}${c.rarity&&c.rarity!=='—'?' · '+c.rarity:''}</div>`:''}
+        <div class="cc-cond">
+          <div class="cc-ci"><div class="cc-cl">CTR</div><div class="cc-cv" style="color:${gc(c.centering)}">${c.centering}</div></div>
+          <div class="cc-ci"><div class="cc-cl">CRN</div><div class="cc-cv" style="color:${gc(c.corners)}">${c.corners}</div></div>
+          <div class="cc-ci"><div class="cc-cl">EDG</div><div class="cc-cv" style="color:${gc(c.edges)}">${c.edges}</div></div>
+          <div class="cc-ci"><div class="cc-cl">SRF</div><div class="cc-cv" style="color:${gc(c.surface)}">${c.surface}</div></div>
+        </div>
+        <div class="mini-bar-wrap">
+          <div class="mini-bar-lbl"><span>Grade</span><span style="color:${col};font-weight:700">${g}/10</span></div>
+          <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${g*10}%;background:${col}"></div></div>
+        </div>
+        ${c.notes?`<div class="cc-notes">${c.notes}</div>`:''}
+      </div>
+      <div class="cc-footer">
+        <span class="cc-v">$${Number(c.value).toFixed(2)}</span>
+        <div style="display:flex;gap:5px">
+          <button class="share-btn" onclick="shareCard(${c.id})" title="Share this card">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>
+          <button class="del-btn" onclick="delCard(${c.id})">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Fallback card HTML when image fails to load
+function cardErrHtml(grade,emoji,name,setName){
+  const g=Math.round(grade);
+  const slabColor=g>=10?'cc-slab-10':g>=9?'cc-slab-9':g>=7?'cc-slab-8':g>=5?'cc-slab-6':'cc-slab-5';
+  return`<div style="width:100%;height:100%;background:#1B3F6E;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;position:relative">
+    <span style="font-size:44px;filter:drop-shadow(0 4px 10px rgba(0,0,0,0.5))">${emoji}</span>
+    <span style="font-size:10px;color:rgba(255,255,255,0.5);font-weight:600;text-align:center;padding:0 8px">${name}</span>
+    <span style="font-size:9px;color:rgba(255,255,255,0.25)">${setName}</span>
+    <div class="cc-psa-slab ${slabColor}" style="position:static;margin-top:4px">
+      <div class="cc-psa-slab-label">PSA</div>
+      <div class="cc-psa-slab-num">${g}</div>
+    </div>
+  </div>`;
+}
+function fallbackCard(name,emoji,setName){return cardErrHtml(0,emoji,name,setName)}
+function sortColl(v){const c=getColl();if(v==='val-d')c.sort((a,b)=>b.value-a.value);else if(v==='val-a')c.sort((a,b)=>a.value-b.value);else if(v==='grade-d')c.sort((a,b)=>b.grade-a.grade);else if(v==='grade-a')c.sort((a,b)=>a.grade-b.grade);else c.sort((a,b)=>b.dateAdded-a.dateAdded);colls[curUser.email]=c;renderColl()}
+function delCard(id){colls[curUser.email]=getColl().filter(c=>c.id!==id);persist();renderColl();toast('Card removed')}
+/* ═══════════════════════════════════
+   SHARE SYSTEM — Link-first
+═══════════════════════════════════ */
+let shareCanvas=null;
+let currentShareUrl='';
+let currentShareData=null; // {type:'card'|'collection', data}
+
+// ── BUILD SHAREABLE URL ──
+// Encodes card/collection into URL hash — works on any domain
+function buildShareUrl(type, data){
+  const payload={type, data, app:'cardsquest', v:1};
+  const encoded=btoa(encodeURIComponent(JSON.stringify(payload)));
+  const base=window.location.href.split('#')[0].split('?')[0];
+  return `${base}#share=${encoded}`;
+}
+
+// ── OPEN SHARE MODAL FOR A CARD ──
+async function shareCard(cardId){
+  // Sharing requires Starter or above
+  if(!canShare(curUser?.email)){showUpgradePrompt('card sharing');return;}
+  const c=getColl().find(x=>x.id===cardId);
+  if(!c)return;
+  currentShareData={type:'card',data:c};
+
+  const url=buildShareUrl('card',{
+    name:c.name,grade:Math.round(c.grade),gradeLabel:c.gradeLabel,
+    value:c.value,centering:c.centering,corners:c.corners,
+    edges:c.edges,surface:c.surface,notes:c.notes,
+    setName:c.setName,cardNumber:c.cardNumber,rarity:c.rarity,
+    tcgImg:c.tcgImg,emoji:c.emoji,type:c.type,hp:c.hp,
+    trainer:curUser.name
+  });
+  currentShareUrl=url;
+
+  document.getElementById('share-modal-title').textContent='Share Card';
+  document.getElementById('share-modal-sub').textContent='Anyone with the link can view this card';
+  document.getElementById('share-link-text').textContent=url;
+  document.getElementById('copy-link-btn').textContent='Copy Link';
+  document.getElementById('share-preview').innerHTML='<div class="share-preview-loading">Generating preview...</div>';
+  document.getElementById('share-modal').classList.add('show');
+
+  const canvas=await generateCardShareImage(c);
+  shareCanvas=canvas;
+  const preview=document.getElementById('share-preview');
+  preview.innerHTML='';preview.appendChild(canvas);
+}
+
+// ── OPEN SHARE MODAL FOR COLLECTION ──
+async function shareCollection(){
+  if(!canShare(curUser?.email)){showUpgradePrompt('collection sharing');return;}
+  const coll=getColl();
+  if(!coll.length){toast('No cards in collection yet');return;}
+  currentShareData={type:'collection',data:coll};
+
+  const url=buildShareUrl('collection',{
+    trainer:curUser.name,
+    cards:coll.map(c=>({
+      name:c.name,grade:Math.round(c.grade),gradeLabel:c.gradeLabel,
+      value:c.value,setName:c.setName,tcgImg:c.tcgImg,emoji:c.emoji,type:c.type
+    }))
+  });
+  currentShareUrl=url;
+
+  document.getElementById('share-modal-title').textContent='Share My Collection';
+  document.getElementById('share-modal-sub').textContent='Anyone with the link can view your collection';
+  document.getElementById('share-link-text').textContent=url;
+  document.getElementById('copy-link-btn').textContent='Copy Link';
+  document.getElementById('share-preview').innerHTML='<div class="share-preview-loading">Generating preview...</div>';
+  document.getElementById('share-modal').classList.add('show');
+
+  const canvas=await generateCollectionShareImage(coll);
+  shareCanvas=canvas;
+  const preview=document.getElementById('share-preview');
+  preview.innerHTML='';preview.appendChild(canvas);
+}
+
+// ── COPY LINK ──
+function copyShareLink(){
+  if(!currentShareUrl)return;
+  navigator.clipboard.writeText(currentShareUrl).then(()=>{
+    const btn=document.getElementById('copy-link-btn');
+    btn.textContent='Copied! ✓';btn.style.background='#16A34A';
+    setTimeout(()=>{btn.textContent='Copy Link';btn.style.background='';},2500);
+  }).catch(()=>{
+    // Fallback for older browsers
+    const ta=document.createElement('textarea');
+    ta.value=currentShareUrl;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');
+    document.body.removeChild(ta);
+    const btn=document.getElementById('copy-link-btn');
+    btn.textContent='Copied! ✓';btn.style.background='#16A34A';
+    setTimeout(()=>{btn.textContent='Copy Link';btn.style.background='';},2500);
+  });
+}
+
+function closeShareModal(){
+  document.getElementById('share-modal').classList.remove('show');
+  shareCanvas=null;currentShareUrl='';
+}
+
+// ── SOCIAL SHARE ──
+async function doShare(method){
+  const url=currentShareUrl;
+  const blob=shareCanvas?await new Promise(r=>shareCanvas.toBlob(r,'image/png')):null;
+  const file=blob?new File([blob],'cardsquest-share.png',{type:'image/png'}):null;
+  const title=currentShareData?.data?.name?`${currentShareData.data.name} · CardsQuest`:'My CardsQuest Collection';
+  const text=currentShareData?.type==='card'
+    ?`Just graded my ${currentShareData.data.name} on CardsQuest — PSA ${Math.round(currentShareData.data.grade||0)} 🃏`
+    :`Check out my Pokémon card collection on CardsQuest 🃏`;
+
+  if(method==='native'&&navigator.share){
+    try{
+      const shareData={title,text,url};
+      if(file&&navigator.canShare&&navigator.canShare({files:[file]}))shareData.files=[file];
+      await navigator.share(shareData);
+    }catch(e){if(e.name!=='AbortError')toast('Try Copy Link instead');}
+  } else if(method==='twitter'){
+    const tw=encodeURIComponent(`${text}\n${url}`);
+    window.open(`https://twitter.com/intent/tweet?text=${tw}`,'_blank');
+  } else if(method==='facebook'){
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,'_blank');
+  } else if(method==='download'){
+    if(!blob){toast('Preview not ready yet');return;}
+    const burl=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=burl;
+    a.download='cardsquest-share.png';a.click();
+    URL.revokeObjectURL(burl);toast('Image downloaded ✓');
+  }
+}
+
+// ── PUBLIC VIEW — renders when #share= detected in URL ──
+function checkShareUrl(){
+  const hash=window.location.hash;
+  if(!hash.startsWith('#share='))return false;
+  try{
+    const encoded=hash.slice(7);
+    const payload=JSON.parse(decodeURIComponent(atob(encoded)));
+    if(!payload||!payload.type)return false;
+    renderPublicView(payload);
+    return true;
+  }catch(e){return false;}
+}
+
+function renderPublicView(payload){
+  // Hide all other views, show public view
+  document.getElementById('auth-view').style.display='none';
+  document.getElementById('main-view').style.display='none';
+  document.getElementById('public-view').style.display='block';
+
+  const container=document.getElementById('public-content');
+
+  if(payload.type==='card'){
+    const c=payload.data;
+    const g=Math.round(c.grade||0);
+    const col=gradeColor(g);
+    const bc=g>=9?'#DCFCE7':g>=7?'#DBEAFE':g>=5?'#FEF3C7':'#FEE2E2';
+    const tc=g>=9?'#14532D':g>=7?'#1E3A8A':g>=5?'#78350F':'#7F1D1D';
+
+    container.innerHTML=`
+      <div style="text-align:center;margin-bottom:8px;font-size:13px;color:rgba(255,255,255,0.4);font-weight:500">
+        ${c.trainer||'A Trainer'} graded this card on CardsQuest
+      </div>
+      <!-- Card image -->
+      <div style="display:flex;justify-content:center;margin-bottom:24px">
+        <div style="position:relative;display:inline-block">
+          ${c.tcgImg?`<img src="${c.tcgImg}" alt="${c.name}" style="width:220px;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,0.6);display:block"/>`:
+            `<div style="width:220px;height:308px;background:#1B3F6E;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:64px">${c.emoji||'🃏'}</div>`}
+          <!-- PSA slab -->
+          <div style="position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0A0A1E,#1A1A3E);border:2px solid #D4A017;border-radius:10px;padding:6px 16px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,0.5);white-space:nowrap">
+            <div style="font-size:9px;font-weight:800;color:#D4A017;letter-spacing:1.5px;text-transform:uppercase">PSA Grade</div>
+            <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#fff;line-height:1;color:${col}">${g}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.5);font-weight:600">${c.gradeLabel||''}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card name + set -->
+      <div style="text-align:center;margin-top:28px;margin-bottom:20px">
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#fff;margin-bottom:4px">${c.name}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.45)">${c.setName||''}${c.cardNumber?' · '+c.cardNumber:''}${c.rarity?' · '+c.rarity:''}</div>
+      </div>
+
+      <!-- Subgrades -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px">
+        ${[['Centering',c.centering],['Corners',c.corners],['Edges',c.edges],['Surface',c.surface]].map(([l,v])=>`
+          <div style="background:rgba(255,255,255,0.06);border-radius:12px;padding:12px 8px;text-align:center">
+            <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">${l}</div>
+            <div style="font-size:22px;font-weight:900;font-family:'Playfair Display',serif;color:${gradeColor(Math.round(v||0))}">${Math.round(v||0)}</div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Value -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px">Estimated Value</div>
+          <div style="font-size:26px;font-weight:900;font-family:'Playfair Display',serif;color:#4ADE80">$${Number(c.value||0).toLocaleString()}</div>
+        </div>
+        <div style="background:${bc};color:${tc};padding:6px 14px;border-radius:20px;font-weight:700;font-size:12px">PSA ${g} · ${c.gradeLabel||''}</div>
+      </div>
+
+      ${c.notes?`<div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:14px 16px;font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;margin-bottom:16px">${c.notes}</div>`:''}`;
+
+  } else if(payload.type==='collection'){
+    const d=payload.data;
+    const cards=d.cards||[];
+    const total=cards.reduce((s,c)=>s+(c.value||0),0);
+    const avg=cards.length?(cards.reduce((s,c)=>s+(c.grade||0),0)/cards.length).toFixed(1):'—';
+
+    container.innerHTML=`
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:900;color:#fff;margin-bottom:6px">${d.trainer||'Trainer'}'s Collection</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.4)">${cards.length} cards · Avg PSA ${avg}</div>
+        <div style="font-size:22px;font-weight:800;color:#4ADE80;margin-top:6px">$${total.toLocaleString()} total value</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:20px">
+        ${cards.map(c=>{
+          const g=Math.round(c.grade||0);const col=gradeColor(g);
+          const bc=g>=9?'#DCFCE7':g>=7?'#DBEAFE':g>=5?'#FEF3C7':'#FEE2E2';
+          const tc=g>=9?'#14532D':g>=7?'#1E3A8A':g>=5?'#78350F':'#7F1D1D';
+          return`<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden">
+            <div style="position:relative;aspect-ratio:5/7;background:#0f2744;overflow:hidden">
+              ${c.tcgImg?`<img src="${c.tcgImg}" style="width:100%;height:100%;object-fit:contain" alt="${c.name}" onerror="this.style.display='none'"/>`:
+                `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px">${c.emoji||'🃏'}</div>`}
+              <div style="position:absolute;bottom:5px;right:5px;background:rgba(10,10,30,0.92);border:1px solid #D4A017;border-radius:6px;padding:2px 7px;text-align:center">
+                <div style="font-size:6px;font-weight:800;color:#D4A017;letter-spacing:1px;text-transform:uppercase">PSA</div>
+                <div style="font-size:14px;font-weight:900;font-family:'Playfair Display',serif;color:${col};line-height:1">${g}</div>
+              </div>
+            </div>
+            <div style="padding:8px 10px">
+              <div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px">${c.name}</div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:4px">${c.setName||''}</div>
+              <div style="font-size:12px;font-weight:700;color:#4ADE80">$${Number(c.value||0).toLocaleString()}</div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+}
+
+// Check for share URL on page load
+window.addEventListener('DOMContentLoaded',()=>{
+  if(!checkShareUrl()){
+    // Normal app flow
+  }
+});
+// Also check if hash changes (back button etc)
+window.addEventListener('hashchange',()=>checkShareUrl());
+
+// ── SINGLE CARD SHARE IMAGE ──
+async function generateCardShareImage(c){
+  const W=800,H=600;
+  const canvas=document.getElementById('share-canvas');
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+  const g=Math.round(c.grade);
+  const gc2=gradeColor(g);
+  const ts=typeStyle(c.type||'normal');
+
+  // Dark gradient background
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#0E0E14');
+  bg.addColorStop(1,'#1B2A4A');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // Subtle grid pattern
+  ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Gold accent glow top-left
+  const glow=ctx.createRadialGradient(0,0,0,0,0,300);
+  glow.addColorStop(0,'rgba(200,150,12,0.15)');
+  glow.addColorStop(1,'transparent');
+  ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+
+  // Card image on left
+  const cardX=50,cardY=60,cardW=260,cardH=360;
+  ctx.save();
+  roundRect(ctx,cardX-4,cardY-4,cardW+8,cardH+8,14);
+  ctx.fillStyle='#D4A017';ctx.fill();
+  ctx.restore();
+
+  // Try to draw card image
+  if(c.tcgImg&&c.tcgImg.length>10){
+    try{
+      const img=await loadImg(c.tcgImg);
+      ctx.save();
+      roundRect(ctx,cardX,cardY,cardW,cardH,10);
+      ctx.clip();
+      ctx.drawImage(img,cardX,cardY,cardW,cardH);
+      ctx.restore();
+    }catch{drawCardPlaceholder(ctx,cardX,cardY,cardW,cardH,c,ts);}
+  } else if(c.imgSrc){
+    try{
+      const img=await loadImg(c.imgSrc);
+      ctx.save();
+      roundRect(ctx,cardX,cardY,cardW,cardH,10);
+      ctx.clip();
+      ctx.drawImage(img,cardX,cardY,cardW,cardH);
+      ctx.restore();
+    }catch{drawCardPlaceholder(ctx,cardX,cardY,cardW,cardH,c,ts);}
+  } else {
+    drawCardPlaceholder(ctx,cardX,cardY,cardW,cardH,c,ts);
+  }
+
+  // PSA slab on card
+  const sx=cardX+cardW-70,sy=cardY+cardH-52;
+  ctx.fillStyle='rgba(10,10,30,0.92)';
+  roundRect(ctx,sx,sy,62,44,8);ctx.fill();
+  ctx.strokeStyle='#D4A017';ctx.lineWidth=1.5;
+  roundRect(ctx,sx,sy,62,44,8);ctx.stroke();
+  // Grade color bar
+  ctx.fillStyle=gc2;
+  roundRect(ctx,sx,sy,62,4,{tl:8,tr:8,bl:0,br:0});ctx.fill();
+  ctx.fillStyle='#D4A017';
+  ctx.font='bold 8px Outfit,sans-serif';ctx.textAlign='center';
+  ctx.fillText('PSA',sx+31,sy+17);
+  ctx.fillStyle='#fff';
+  ctx.font='bold 20px Georgia,serif';ctx.textAlign='center';
+  ctx.fillText(g,sx+31,sy+37);
+
+  // Right side — card info
+  const rx=360,ry=70;
+  ctx.textAlign='left';
+
+  // CardsQuest branding
+  ctx.fillStyle='rgba(245,197,24,0.9)';
+  ctx.font='bold 13px Outfit,sans-serif';
+  ctx.fillText('Cards', rx, ry);
+  ctx.fillStyle='rgba(245,197,24,0.5)';
+  ctx.fillText('Quest', rx+50, ry);
+
+  // Card name
+  ctx.fillStyle='#fff';
+  ctx.font='bold 32px Georgia,serif';
+  wrapText(ctx,c.name,rx,ry+36,360,38);
+
+  // Set info
+  ctx.fillStyle='rgba(255,255,255,0.45)';
+  ctx.font='14px Outfit,sans-serif';
+  ctx.fillText((c.setName||'')+(c.cardNumber?' · '+c.cardNumber:''),rx,ry+86);
+
+  // Divider
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(rx,ry+102);ctx.lineTo(W-50,ry+102);ctx.stroke();
+
+  // Grade big display
+  ctx.fillStyle=gc2;
+  ctx.font='bold 72px Georgia,serif';ctx.textAlign='left';
+  ctx.fillText(g,rx,ry+180);
+
+  ctx.fillStyle='rgba(255,255,255,0.6)';
+  ctx.font='18px Outfit,sans-serif';
+  ctx.fillText('/10',rx+56,ry+160);
+
+  ctx.fillStyle='#fff';
+  ctx.font='bold 16px Outfit,sans-serif';
+  ctx.fillText(c.gradeLabel||'',rx,ry+200);
+
+  // Subgrades row
+  const subs=[['CTR',c.centering],['CRN',c.corners],['EDG',c.edges],['SRF',c.surface]];
+  subs.forEach(([lbl,val],i)=>{
+    const sx2=rx+(i*90);const sy2=ry+230;
+    ctx.fillStyle='rgba(255,255,255,0.07)';
+    roundRect(ctx,sx2,sy2,78,52,8);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.35)';
+    ctx.font='bold 9px Outfit,sans-serif';ctx.textAlign='center';
+    ctx.fillText(lbl,sx2+39,sy2+16);
+    ctx.fillStyle=gradeColor(Math.round(val||0));
+    ctx.font='bold 22px Georgia,serif';ctx.textAlign='center';
+    ctx.fillText(Math.round(val||0),sx2+39,sy2+40);
+  });
+
+  // Value
+  ctx.textAlign='left';
+  ctx.fillStyle='rgba(255,255,255,0.4)';
+  ctx.font='12px Outfit,sans-serif';
+  ctx.fillText('ESTIMATED VALUE',rx,ry+318);
+  ctx.fillStyle='#4ADE80';
+  ctx.font='bold 28px Georgia,serif';
+  ctx.fillText('$'+Number(c.value).toLocaleString(),rx,ry+348);
+
+  // Footer
+  ctx.fillStyle='rgba(255,255,255,0.15)';
+  ctx.font='11px Outfit,sans-serif';ctx.textAlign='center';
+  ctx.fillText('cardsquest.app · AI-powered PSA-accurate card grading',W/2,H-20);
+
+  // Return a new canvas sized for preview
+  const out=document.createElement('canvas');
+  out.width=W;out.height=H;
+  out.getContext('2d').drawImage(canvas,0,0);
+  return out;
+}
+
+// ── COLLECTION SHARE IMAGE ──
+async function generateCollectionShareImage(coll){
+  const sorted=[...coll].sort((a,b)=>b.value-a.value).slice(0,6);
+  const W=900,H=520;
+  const canvas=document.getElementById('share-canvas');
+  canvas.width=W;canvas.height=H;
+  const ctx=canvas.getContext('2d');
+
+  // Background
+  const bg=ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0,'#0E0E14');bg.addColorStop(1,'#1B2A4A');
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // Subtle grid
+  ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Gold glow
+  const glow=ctx.createRadialGradient(W/2,0,0,W/2,0,400);
+  glow.addColorStop(0,'rgba(200,150,12,0.12)');glow.addColorStop(1,'transparent');
+  ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+
+  // Header
+  ctx.fillStyle='#F5C518';ctx.font='bold 14px Outfit,sans-serif';ctx.textAlign='left';
+  ctx.fillText('Cards',40,42);
+  ctx.fillStyle='rgba(245,197,24,0.5)';ctx.fillText('Quest',90,42);
+
+  ctx.fillStyle='#fff';ctx.font='bold 26px Georgia,serif';
+  ctx.fillText(curUser.name.split(' ')[0]+"'s Collection",40,72);
+
+  const total=coll.reduce((s,c)=>s+(c.value||0),0);
+  const avg=coll.length?(coll.reduce((s,c)=>s+c.grade,0)/coll.length).toFixed(1):'—';
+  ctx.fillStyle='rgba(255,255,255,0.45)';ctx.font='13px Outfit,sans-serif';
+  ctx.fillText(`${coll.length} cards · $${total.toLocaleString()} total · PSA avg ${avg}`,40,95);
+
+  // Divider
+  ctx.strokeStyle='rgba(255,255,255,0.1)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(40,110);ctx.lineTo(W-40,110);ctx.stroke();
+
+  // Card grid — up to 6 cards
+  const cols=Math.min(sorted.length,3);
+  const rows=Math.ceil(sorted.length/cols);
+  const cW=Math.floor((W-80-(cols-1)*14)/cols);
+  const cH=Math.floor((H-145-(rows-1)*10)/rows);
+
+  for(let i=0;i<sorted.length;i++){
+    const c=sorted[i];
+    const col=i%cols;
+    const row=Math.floor(i/cols);
+    const cx=40+col*(cW+14);
+    const cy=120+row*(cH+10);
+    const g=Math.round(c.grade);
+    const gc3=gradeColor(g);
+
+    // Card background
+    ctx.fillStyle='rgba(255,255,255,0.05)';
+    roundRect(ctx,cx,cy,cW,cH,10);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
+    roundRect(ctx,cx,cy,cW,cH,10);ctx.stroke();
+
+    // Card image left portion
+    const imgW=Math.floor(cW*0.42);
+    if(c.tcgImg&&c.tcgImg.length>10){
+      try{
+        const img=await loadImg(c.tcgImg);
+        ctx.save();
+        roundRect(ctx,cx,cy,imgW,cH,{tl:10,tr:0,bl:10,br:0});
+        ctx.clip();
+        ctx.drawImage(img,cx,cy,imgW,cH);
+        ctx.restore();
+      }catch{drawMiniPlaceholder(ctx,cx,cy,imgW,cH,c);}
+    } else {
+      drawMiniPlaceholder(ctx,cx,cy,imgW,cH,c);
+    }
+
+    // Grade slab overlay
+    const slabX=cx+imgW-36,slabY=cy+cH-36;
+    ctx.fillStyle='rgba(10,10,30,0.9)';
+    roundRect(ctx,slabX,slabY,32,28,5);ctx.fill();
+    ctx.strokeStyle='#D4A017';ctx.lineWidth=1;
+    roundRect(ctx,slabX,slabY,32,28,5);ctx.stroke();
+    ctx.fillStyle=gc3;roundRect(ctx,slabX,slabY,32,3,{tl:5,tr:5,bl:0,br:0});ctx.fill();
+    ctx.fillStyle='#fff';ctx.font='bold 13px Georgia,serif';ctx.textAlign='center';
+    ctx.fillText(g,slabX+16,slabY+21);
+
+    // Text right side
+    const tx=cx+imgW+10,tw=cW-imgW-14;
+    ctx.textAlign='left';
+    ctx.fillStyle='#fff';ctx.font='bold 12px Outfit,sans-serif';
+    wrapText(ctx,c.name,tx,cy+16,tw,15,1);
+    ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='10px Outfit,sans-serif';
+    ctx.fillText(c.setName||'',tx,cy+32,tw);
+    ctx.fillStyle='#4ADE80';ctx.font='bold 14px Outfit,sans-serif';
+    ctx.fillText('$'+Number(c.value).toLocaleString(),tx,cy+cH-10);
+  }
+
+  // Footer
+  ctx.fillStyle='rgba(255,255,255,0.15)';
+  ctx.font='11px Outfit,sans-serif';ctx.textAlign='center';
+  ctx.fillText('cardsquest.app · AI-powered PSA-accurate card grading',W/2,H-8);
+
+  const out=document.createElement('canvas');
+  out.width=W;out.height=H;
+  out.getContext('2d').drawImage(canvas,0,0);
+  return out;
+}
+
+// ── CANVAS HELPERS ──
+function loadImg(src){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    img.onload=()=>res(img);
+    img.onerror=()=>rej(new Error('img load fail'));
+    // Add cache-bust to avoid CORS cache issues
+    img.src=src+(src.includes('?')?'&':'?')+'cq=1';
+  });
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  if(typeof r==='number')r={tl:r,tr:r,bl:r,br:r};
+  ctx.beginPath();
+  ctx.moveTo(x+r.tl,y);
+  ctx.lineTo(x+w-r.tr,y);ctx.arcTo(x+w,y,x+w,y+r.tr,r.tr);
+  ctx.lineTo(x+w,y+h-r.br);ctx.arcTo(x+w,y+h,x+w-r.br,y+h,r.br);
+  ctx.lineTo(x+r.bl,y+h);ctx.arcTo(x,y+h,x,y+h-r.bl,r.bl);
+  ctx.lineTo(x,y+r.tl);ctx.arcTo(x,y,x+r.tl,y,r.tl);
+  ctx.closePath();
+}
+
+function wrapText(ctx,text,x,y,maxW,lineH,maxLines=99){
+  const words=text.split(' ');let line='';let lines=0;
+  for(let n=0;n<words.length;n++){
+    const test=line+words[n]+' ';
+    if(ctx.measureText(test).width>maxW&&n>0){
+      ctx.fillText(line.trim(),x,y);
+      line=words[n]+' ';y+=lineH;lines++;
+      if(lines>=maxLines)break;
+    } else line=test;
+  }
+  if(lines<maxLines)ctx.fillText(line.trim(),x,y);
+}
+
+function drawCardPlaceholder(ctx,x,y,w,h,c,ts){
+  const grad=ctx.createLinearGradient(x,y,x,y+h);
+  grad.addColorStop(0,ts.bg+'CC');grad.addColorStop(1,ts.bg+'88');
+  ctx.fillStyle=grad;
+  roundRect(ctx,x,y,w,h,10);ctx.fill();
+  ctx.font='52px serif';ctx.textAlign='center';
+  ctx.fillText(c.emoji||'🃏',x+w/2,y+h/2+18);
+}
+
+function drawMiniPlaceholder(ctx,x,y,w,h,c){
+  const ts=typeStyle(c.type||'normal');
+  ctx.fillStyle=ts.bg+'CC';
+  roundRect(ctx,x,y,w,h,{tl:10,tr:0,bl:10,br:0});ctx.fill();
+  ctx.font='22px serif';ctx.textAlign='center';
+  ctx.fillText(c.emoji||'🃏',x+w/2,y+h/2+8);
+}
+
+function toast(msg){const t=document.getElementById('toast-el');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200)}
+</script>
+</body>
+</html>
