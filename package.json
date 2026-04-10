@@ -1,7 +1,8 @@
 {
   "name": "cardsquest",
   "version": "1.0.0",
+  "description": "AI Pokemon card grading app",
   "dependencies": {
-    "stripe": "^14.0.0"
+    "stripe": "14.21.0"
   }
 }
