@@ -1704,62 +1704,151 @@ function sanitise(str){
     .replace(/'/g,'&#39;');
 }
 
-async function doLogin(){
-  const em=document.getElementById('li-em').value.trim().toLowerCase();
-  const pw=document.getElementById('li-pw').value;
-  if(!em||!pw){showErr('Fill in all fields');return}
-  if(!users[em]){showErr('No account found');return}
-  const hash=await hashPw(pw);
-  // Support both hashed and legacy plain-text passwords (auto-upgrades on login)
-  const stored=users[em].password;
-  const match=(stored===hash)||(stored===pw);
-  if(!match){showErr('Incorrect password');return}
-  // Upgrade plain-text password to hash silently
-  if(stored===pw){users[em].password=hash;persist();}
-  loginOk(em,users[em].name);
+// ── SUPABASE API HELPER ──
+const SB_API = '/.netlify/functions/supabase-auth';
+
+async function sbCall(action, data) {
+  const res = await fetch(SB_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...data }),
+  });
+  return res.json();
 }
 
-async function doSignup(){
-  const nm=document.getElementById('su-nm').value.trim();
-  const em=document.getElementById('su-em').value.trim().toLowerCase();
-  const pw=document.getElementById('su-pw').value;
-  if(!nm||!em||!pw){showErr('Fill in all fields');return}
-  if(pw.length<6){showErr('Password needs 6+ chars');return}
-  if(users[em]){showErr('Account exists — try logging in');return}
-  // Basic email format check
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){showErr('Enter a valid email');return}
-  const hash=await hashPw(pw);
-  users[em]={password:hash,name:nm};
-  colls[em]=[];persist();
-  loginOk(em,nm);
+// ── AUTH ──
+async function doLogin() {
+  const em = document.getElementById('li-em').value.trim().toLowerCase();
+  const pw = document.getElementById('li-pw').value;
+  if (!em || !pw) { showErr('Fill in all fields'); return; }
+  const hash = await hashPw(pw);
+  const btn = document.querySelector('#f-login .btn-cta');
+  if (btn) { btn.disabled = true; btn.textContent = 'Logging in...'; }
+  try {
+    const r = await sbCall('login', { email: em, passwordHash: hash, plainPassword: pw });
+    if (!r.success) { showErr(r.error || 'Login failed'); return; }
+    loginOk(r.user, r.collection || []);
+  } catch(e) {
+    // Fallback to localStorage for demo accounts
+    if (users[em]) {
+      const stored = users[em].password;
+      if (stored === hash || stored === pw) {
+        loginOk({ email: em, name: users[em].name, plan: getUserPlan(em), scansUsed: parseInt(localStorage.getItem('cq-s-' + em) || '0') }, colls[em] || []);
+        return;
+      }
+    }
+    showErr('Login failed — check your connection');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Login to My Collection →'; }
+  }
 }
-function qlogin(em,nm){loginOk(em,nm)}
-function loginOk(em,nm){
-  curUser={email:em,name:nm};scansUsed=parseInt(localStorage.getItem('cq-s-'+em)||'0');
-  const{data,isNewDay,streakBroken}=processLogin(em);
-  document.getElementById('auth-view').style.display='none';
-  document.getElementById('main-view').style.display='block';
-  document.getElementById('u-av').textContent=nm.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
-  document.getElementById('u-nm').textContent=nm.split(' ')[0];
-  document.getElementById('coll-sub').textContent=nm+"'s graded cards";
-  // Show plan badge
-  const planKey=getUserPlan(em);
-  const planColors={free:'#A8A29E',starter:'#2563EB',pro:'#C8960C',lifetime:'#7C3AED'};
-  const planEl=document.getElementById('plan-badge');
-  if(planEl){planEl.textContent=PLANS[planKey].name;planEl.style.color=planColors[planKey];planEl.style.background=planColors[planKey]+'18';planEl.style.borderColor=planColors[planKey]+'44';}
-  updateUsage();updateStreakHeader(data.streak||0);
+
+async function doSignup() {
+  const nm = document.getElementById('su-nm').value.trim();
+  const em = document.getElementById('su-em').value.trim().toLowerCase();
+  const pw = document.getElementById('su-pw').value;
+  if (!nm || !em || !pw) { showErr('Fill in all fields'); return; }
+  if (pw.length < 6) { showErr('Password needs 6+ chars'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { showErr('Enter a valid email'); return; }
+  const hash = await hashPw(pw);
+  const btn = document.querySelector('#f-signup .btn-cta');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating account...'; }
+  try {
+    const r = await sbCall('signup', { email: em, passwordHash: hash, name: nm });
+    if (!r.success) { showErr(r.error || 'Signup failed'); return; }
+    loginOk(r.user, []);
+  } catch(e) {
+    showErr('Signup failed — check your connection');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Create Free Account →'; }
+  }
+}
+
+function qlogin(em, nm) {
+  // Demo account quick login — use localStorage fallback
+  loginOk({ email: em, name: nm, plan: getUserPlan(em), scansUsed: parseInt(localStorage.getItem('cq-s-' + em) || '0') }, colls[em] || []);
+}
+
+function loginOk(userObj, collection) {
+  const em = userObj.email;
+  const nm = userObj.name;
+  curUser = { email: em, name: nm };
+  scansUsed = userObj.scansUsed || 0;
+
+  // Store collection in memory
+  colls[em] = collection.map(c => ({
+    id: c.card_id || c.id,
+    name: c.name,
+    grade: c.grade,
+    value: c.value,
+    confidence: c.confidence,
+    centering: c.centering,
+    corners: c.corners,
+    edges: c.edges,
+    surface: c.surface,
+    gradeLabel: c.grade_label || c.gradeLabel || '',
+    notes: c.notes,
+    type: c.type,
+    setName: c.set_name || c.setName || '',
+    rarity: c.rarity,
+    tcgImg: c.tcg_img || c.tcgImg || '',
+    artUrl: c.art_url || c.artUrl || '',
+    imgSrc: c.img_src || c.imgSrc || '',
+    livePrice: c.live_price || c.livePrice || false,
+    emoji: c.emoji || '🃏',
+    dateAdded: c.date_added || c.dateAdded || Date.now(),
+    cardId: c.card_id || c.cardId || '',
+  }));
+
+  // Store plan from Supabase user object
+  if (userObj.plan) localStorage.setItem('cq-plan-' + em, userObj.plan);
+
+  // Check for pending plan upgrade from Stripe
+  const pending = localStorage.getItem('cq-pending-plan');
+  if (pending) {
+    localStorage.setItem('cq-plan-' + em, pending);
+    localStorage.removeItem('cq-pending-plan');
+    sbCall('update_plan', { email: em, plan: pending });
+    setTimeout(() => toast(`✅ ${pending.charAt(0).toUpperCase() + pending.slice(1)} plan activated!`), 800);
+  }
+
+  const { data, isNewDay, streakBroken } = processLogin(em);
+
+  document.getElementById('auth-view').style.display = 'none';
+  document.getElementById('main-view').style.display = 'block';
+  document.getElementById('u-av').textContent = nm.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  document.getElementById('u-nm').textContent = nm.split(' ')[0];
+  document.getElementById('coll-sub').textContent = nm + "'s graded cards";
+
+  const planKey = getUserPlan(em);
+  const planColors = { free: '#A8A29E', starter: '#2563EB', pro: '#C8960C', lifetime: '#7C3AED' };
+  const planEl = document.getElementById('plan-badge');
+  if (planEl) { planEl.textContent = PLANS[planKey].name; planEl.style.color = planColors[planKey]; planEl.style.background = planColors[planKey] + '18'; planEl.style.borderColor = planColors[planKey] + '44'; }
+
+  updateUsage();
+  updateStreakHeader(data.streak || 0);
   fetchMissingCardImages(em);
-  setTimeout(()=>showStreakToast(data.streak||0,isNewDay,streakBroken),600);
+  setTimeout(() => showStreakToast(data.streak || 0, isNewDay, streakBroken), 600);
 }
-function updateUsage(){
-  const limit=getScanLimit(curUser?.email);
-  const isUnlimited=limit===Infinity;
-  const rem=isUnlimited?'∞':Math.max(0,limit-scansUsed);
-  const pct=isUnlimited?0:Math.min((scansUsed/limit)*100,100);
-  const ut=document.getElementById('utxt');if(ut)ut.textContent=isUnlimited?'Unlimited':rem+' / '+limit;
-  const uf=document.getElementById('ufill');if(uf){uf.style.width=pct+'%';uf.className='ufill'+(!isUnlimited&&scansUsed>=limit?' full':'');}
+
+function updateUsage() {
+  const limit = getScanLimit(curUser?.email);
+  const isUnlimited = limit === Infinity;
+  const rem = isUnlimited ? '∞' : Math.max(0, limit - scansUsed);
+  const pct = isUnlimited ? 0 : Math.min((scansUsed / limit) * 100, 100);
+  const ut = document.getElementById('utxt'); if (ut) ut.textContent = isUnlimited ? 'Unlimited' : rem + ' / ' + limit;
+  const uf = document.getElementById('ufill'); if (uf) { uf.style.width = pct + '%'; uf.className = 'ufill' + (!isUnlimited && scansUsed >= limit ? ' full' : ''); }
 }
-function doLogout(){curUser=null;curFile=null;curResult=null;curImgSrc=null;currentCardData=null;clearAll();document.getElementById('main-view').style.display='none';document.getElementById('auth-view').style.display='block';document.getElementById('li-em').value='';document.getElementById('li-pw').value='';document.getElementById('aerr').classList.remove('show');}
+
+function doLogout() {
+  curUser = null; curFile = null; curResult = null; curImgSrc = null; currentCardData = null;
+  clearAll();
+  document.getElementById('main-view').style.display = 'none';
+  document.getElementById('auth-view').style.display = 'block';
+  document.getElementById('li-em').value = '';
+  document.getElementById('li-pw').value = '';
+  document.getElementById('aerr').classList.remove('show');
+}
 function nav(nm,el){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('active'));document.getElementById('screen-'+nm).classList.add('active');if(el)el.classList.add('active');if(nm==='collection'&&curUser)fetchMissingCardImages(curUser.email);if(nm==='streak'&&curUser)renderStreakPanel(curUser.email);}
 
 /* FILE */
@@ -1843,6 +1932,9 @@ async function doGrade(){
     clearInterval(iv);
     scansUsed++;
     localStorage.setItem('cq-s-'+curUser.email,scansUsed);
+    // Sync to Supabase
+    const resetDate=new Date().toISOString().slice(0,7);
+    sbCall('update_scans',{email:curUser.email,scansUsed,scansResetDate:resetDate}).catch(e=>console.warn('Supabase scans:',e));
     updateUsage();
     showResult(p);
   }catch(err){
@@ -1882,33 +1974,45 @@ function saveCard(){
   const tcgPrice=currentCardData?.source==='tcg'?(()=>{const p=currentCardData.card?.tcgplayer?.prices;return p?.holofoil?.market||p?.normal?.market||null})():null;
   const coll=getColl();
 
-  // Compress uploaded photo to a small thumbnail for collection display
-  let thumbSrc = null;
-  if(curImgSrc){
-    try{
-      const canvas=document.createElement('canvas');
-      const img=new Image();
-      img.src=curImgSrc;
-      canvas.width=200;
-      canvas.height=280;
-      const ctx=canvas.getContext('2d');
-      ctx.drawImage(img,0,0,200,280);
-      thumbSrc=canvas.toDataURL('image/jpeg',0.7);
-    }catch(e){ thumbSrc=null; }
+  function doSave(thumbSrc){
+    const card={id:nxtId++,name,
+      grade:Math.round(curResult.grade),value:tcgPrice||Number(curResult.estimatedValue),
+      confidence:curResult.confidence,centering:curResult.centering,corners:curResult.corners,edges:curResult.edges,surface:curResult.surface,
+      notes:curResult.notes||'',gradeLabel:curResult.gradeLabel||'',
+      type:(currentCardData?.source==='tcg'?currentCardData.card?.types?.[0]?.toLowerCase():currentCardData?.pk?.types?.[0]?.type?.name)||'normal',
+      setName:document.getElementById('d-set').textContent,rarity:document.getElementById('d-rarity').textContent,
+      tcgImg:document.getElementById('art-tcg-img').src||'',
+      artUrl:document.getElementById('art-official-img').src||'',
+      imgSrc:thumbSrc||null,
+      livePrice:!!tcgPrice,emoji:'🃏',dateAdded:Date.now()
+    };
+    coll.unshift(card);
+    colls[curUser.email]=coll;
+    // Save to Supabase (fire and forget)
+    sbCall('save_card',{email:curUser.email,card}).catch(e=>console.warn('Supabase save:',e));
+    toast('Saved to collection ✓');clearAll();
   }
 
-  coll.unshift({id:nxtId++,name,
-    grade:Math.round(curResult.grade),value:tcgPrice||Number(curResult.estimatedValue),
-    confidence:curResult.confidence,centering:curResult.centering,corners:curResult.corners,edges:curResult.edges,surface:curResult.surface,
-    notes:curResult.notes||'',gradeLabel:curResult.gradeLabel||'',
-    type:(currentCardData?.source==='tcg'?currentCardData.card?.types?.[0]?.toLowerCase():currentCardData?.pk?.types?.[0]?.type?.name)||'normal',
-    setName:document.getElementById('d-set').textContent,rarity:document.getElementById('d-rarity').textContent,
-    tcgImg:document.getElementById('art-tcg-img').src||'',
-    artUrl:document.getElementById('art-official-img').src||'',
-    imgSrc: thumbSrc,
-    livePrice:!!tcgPrice,emoji:'🃏',dateAdded:Date.now()
-  });
-  colls[curUser.email]=coll;persist();toast('Saved to collection ✓');clearAll();
+  // Compress uploaded photo to thumbnail
+  if(curImgSrc){
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const canvas=document.createElement('canvas');
+        canvas.width=220;canvas.height=308;
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='#000';ctx.fillRect(0,0,220,308);
+        const scale=Math.min(220/img.width,308/img.height);
+        const w=img.width*scale;const h=img.height*scale;
+        ctx.drawImage(img,(220-w)/2,(308-h)/2,w,h);
+        doSave(canvas.toDataURL('image/jpeg',0.75));
+      }catch(e){doSave(null);}
+    };
+    img.onerror=()=>doSave(null);
+    img.src=curImgSrc;
+  } else {
+    doSave(null);
+  }
 }
 
 /* COLLECTION */
@@ -2044,7 +2148,11 @@ function cardErrHtml(grade,emoji,name,setName){
 }
 function fallbackCard(name,emoji,setName){return cardErrHtml(0,emoji,name,setName)}
 function sortColl(v){const c=getColl();if(v==='val-d')c.sort((a,b)=>b.value-a.value);else if(v==='val-a')c.sort((a,b)=>a.value-b.value);else if(v==='grade-d')c.sort((a,b)=>b.grade-a.grade);else if(v==='grade-a')c.sort((a,b)=>a.grade-b.grade);else c.sort((a,b)=>b.dateAdded-a.dateAdded);colls[curUser.email]=c;renderColl()}
-function delCard(id){colls[curUser.email]=getColl().filter(c=>c.id!==id);persist();renderColl();toast('Card removed')}
+function delCard(id){
+  colls[curUser.email]=getColl().filter(c=>c.id!==id);
+  sbCall('delete_card',{email:curUser.email,cardId:id}).catch(e=>console.warn('Supabase delete:',e));
+  renderColl();toast('Card removed');
+}
 /* ═══════════════════════════════════
    SHARE SYSTEM — Link-first
 ═══════════════════════════════════ */
