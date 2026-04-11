@@ -1,13 +1,5 @@
 // netlify/functions/checkout.js
-// CardsQuest — Stripe checkout session creator
-
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-
-const PLANS = {
-  starter: process.env.STRIPE_STARTER_PRICE_ID,
-  pro:     process.env.STRIPE_PRO_PRICE_ID,
-  lifetime: process.env.STRIPE_LIFETIME_PRICE_ID,
-};
+// CardsQuest — Stripe checkout (uses Stripe via CDN fetch, no npm needed)
 
 const allowedOrigins = [
   'https://cardsquest.pro',
@@ -38,43 +30,54 @@ exports.handler = async (event) => {
   catch { return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid request' }) }; }
 
   const { plan, email } = body;
+  const secretKey = process.env.STRIPE_SECRET_KEY;
 
-  if (!plan || !PLANS[plan]) {
-    return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid plan' }) };
-  }
+  const PLANS = {
+    starter:  process.env.STRIPE_STARTER_PRICE_ID,
+    pro:      process.env.STRIPE_PRO_PRICE_ID,
+    lifetime: process.env.STRIPE_LIFETIME_PRICE_ID,
+  };
 
-  if (!process.env.STRIPE_SECRET_KEY) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Stripe not configured' }) };
+  if (!plan || !PLANS[plan]) return { statusCode: 400, headers, body: JSON.stringify({ error: 'Invalid plan' }) };
+  if (!secretKey) return { statusCode: 500, headers, body: JSON.stringify({ error: 'Not configured' }) };
+
+  const isLifetime = plan === 'lifetime';
+
+  // Call Stripe API directly via fetch — no npm package needed
+  const params = new URLSearchParams();
+  params.append('payment_method_types[]', 'card');
+  params.append('mode', isLifetime ? 'payment' : 'subscription');
+  params.append('line_items[0][price]', PLANS[plan]);
+  params.append('line_items[0][quantity]', '1');
+  params.append('success_url', `https://cardsquest.pro?plan=${plan}&upgraded=1`);
+  params.append('cancel_url', 'https://cardsquest.pro?cancelled=1');
+  params.append('metadata[plan]', plan);
+  if (email) {
+    params.append('customer_email', email);
+    params.append('metadata[email]', email);
   }
 
   try {
-    const isLifetime = plan === 'lifetime';
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: isLifetime ? 'payment' : 'subscription',
-      line_items: [{
-        price: PLANS[plan],
-        quantity: 1,
-      }],
-      customer_email: email || undefined,
-      success_url: `https://cardsquest.pro?plan=${plan}&session_id={CHECKOUT_SESSION_ID}&upgraded=1`,
-      cancel_url: `https://cardsquest.pro?cancelled=1`,
-      metadata: { plan, email: email || '' },
+    const res = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${secretKey}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
     });
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ url: session.url, sessionId: session.id }),
-    };
+    const data = await res.json();
+
+    if (!res.ok) {
+      console.error('Stripe error:', data.error?.message);
+      return { statusCode: 400, headers, body: JSON.stringify({ error: data.error?.message || 'Stripe error' }) };
+    }
+
+    return { statusCode: 200, headers, body: JSON.stringify({ url: data.url }) };
 
   } catch (err) {
-    console.error('Stripe checkout error:', err.message);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Could not create checkout session' }),
-    };
+    console.error('Checkout error:', err.message);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Internal error' }) };
   }
 };
