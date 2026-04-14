@@ -501,10 +501,112 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
 <body>
 
 <!-- AUTH -->
+<!-- GUEST GRADE RESULT MODAL — shows after anonymous grade -->
+<div id="guest-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:20px">
+  <div style="background:#0f1420;border:2px solid rgba(255,215,0,0.5);border-radius:20px;width:100%;max-width:360px;overflow:hidden">
+    <!-- Blurred result preview -->
+    <div style="padding:16px;filter:blur(3px);opacity:0.5;pointer-events:none" id="guest-result-preview">
+      <div style="display:flex;gap:10px;margin-bottom:10px">
+        <div style="flex:1;background:rgba(255,215,0,0.1);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:2px">GRADE</div>
+          <div style="font-size:44px;font-weight:900;color:#FFD700;line-height:1" id="guest-grade-preview">9</div>
+        </div>
+        <div style="flex:1;background:rgba(34,197,94,0.1);border-radius:10px;padding:12px;text-align:center">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:2px">VALUE</div>
+          <div style="font-size:24px;font-weight:900;color:#4ADE80;line-height:1" id="guest-value-preview">$0</div>
+        </div>
+      </div>
+    </div>
+    <!-- Signup prompt -->
+    <div style="padding:20px;margin-top:-20px;position:relative;z-index:2">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:22px;margin-bottom:8px">🔓</div>
+        <div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:4px">Unlock your result</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5)">Free account — takes 20 seconds</div>
+      </div>
+      <div id="guest-aerr" style="display:none;background:rgba(220,38,38,0.12);border:1px solid rgba(220,38,38,0.22);border-radius:8px;padding:7px 11px;font-size:12px;color:#F87171;margin-bottom:10px;font-weight:500"></div>
+      <div id="guest-signup-form">
+        <input class="afield" id="g-nm" placeholder="Trainer name" style="margin-bottom:8px"/>
+        <input class="afield" id="g-em" type="email" placeholder="Email address" style="margin-bottom:8px"/>
+        <input class="afield" id="g-pw" type="password" placeholder="Password (min 6 chars)" style="margin-bottom:12px"/>
+        <button class="btn-cta" onclick="doGuestSignup()" id="guest-signup-btn">Create Free Account & See Result →</button>
+      </div>
+      <div id="guest-login-form" style="display:none">
+        <input class="afield" id="g-li-em" type="email" placeholder="Email address" style="margin-bottom:8px"/>
+        <input class="afield" id="g-li-pw" type="password" placeholder="Password" style="margin-bottom:12px"/>
+        <button class="btn-cta" onclick="doGuestLogin()" id="guest-login-btn">Login & See Result →</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin:12px 0">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
+        <div id="guest-toggle-txt" style="font-size:11px;color:rgba(255,255,255,0.3);cursor:pointer" onclick="toggleGuestForm()">Already have an account? Login</div>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
+      </div>
+      <div style="text-align:center;font-size:10px;color:rgba(255,255,255,0.2)">No credit card · Free forever · Cancel anytime</div>
+    </div>
+  </div>
+</div>
+
 <div id="auth-view">
-  <div class="auth-page">
+  <div class="auth-page" style="display:block;padding:0">
     <div class="bg-cards"><div class="bgc bgc1"></div><div class="bgc bgc2"></div><div class="bgc bgc3"></div><div class="bgc bgc4"></div></div>
-    <div class="auth-layout">
+
+    <!-- NEW HEADER -->
+    <div style="position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(7,8,13,0.8);backdrop-filter:blur(10px)">
+      <div>
+        <div style="font-family:'Press Start 2P',cursive;font-size:14px;color:#FFD700;-webkit-text-stroke:2px #2B5CE6;paint-order:stroke fill;text-shadow:2px 2px 0 #1A3A9E;letter-spacing:1px;line-height:1.4">CardsQuest</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;letter-spacing:.3px">AI scans your cards in seconds</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="showAuthForms()" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);border-radius:8px;padding:8px 14px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer">Login</button>
+      </div>
+    </div>
+
+    <!-- NEW LANDING HERO -->
+    <div id="landing-hero" style="position:relative;z-index:5;max-width:480px;margin:0 auto;padding:32px 20px 24px">
+      <!-- Headline -->
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,215,0,0.8);margin-bottom:10px">⚡ AI-Powered Grading</div>
+        <div style="font-family:'Press Start 2P',cursive;font-size:13px;color:#FFD700;-webkit-text-stroke:2px #2B5CE6;paint-order:stroke fill;text-shadow:2px 2px 0 #1A3A9E;letter-spacing:1px;line-height:1.8;margin-bottom:12px">Instant Pokémon<br/>Card Grading.</div>
+        <div style="font-size:15px;font-weight:600;color:rgba(255,255,255,0.65);line-height:1.6">Scan your cards · Get a grade<br/>See the value in 10 seconds.</div>
+      </div>
+
+      <!-- Upload zone -->
+      <div id="guest-upload-zone" onclick="document.getElementById('guest-file-input').click()" style="border:2px dashed rgba(255,215,0,0.4);border-radius:14px;padding:28px 20px;text-align:center;margin-bottom:14px;background:rgba(255,215,0,0.03);cursor:pointer;transition:.2s"
+        onmouseover="this.style.borderColor='rgba(255,215,0,0.7)';this.style.background='rgba(255,215,0,0.06)'"
+        onmouseout="this.style.borderColor='rgba(255,215,0,0.4)';this.style.background='rgba(255,215,0,0.03)'">
+        <div id="guest-upload-preview" style="display:none;margin-bottom:10px">
+          <img id="guest-preview-img" style="max-height:160px;border-radius:10px;border:2px solid rgba(255,215,0,0.4)"/>
+        </div>
+        <div id="guest-upload-placeholder">
+          <div style="font-size:32px;margin-bottom:8px">📸</div>
+          <div style="font-size:15px;font-weight:700;color:#FFD700;margin-bottom:4px">Upload your card photo</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.35)">Tap to choose from camera roll</div>
+        </div>
+      </div>
+      <input type="file" id="guest-file-input" accept="image/*" style="display:none" onchange="guestLoadFile(this.files[0])"/>
+
+      <!-- Grade button -->
+      <button id="guest-grade-btn" onclick="doGuestGrade()" disabled style="width:100%;padding:15px;background:#FFD700;color:#0A0808;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-weight:900;font-size:16px;cursor:pointer;opacity:0.5;transition:.2s;margin-bottom:8px">Grade My Card Free →</button>
+
+      <!-- Loading state -->
+      <div id="guest-loading" style="display:none;text-align:center;padding:14px">
+        <div style="font-size:13px;color:rgba(255,215,0,0.8);font-weight:600" id="guest-loading-txt">Analyzing your card...</div>
+      </div>
+
+      <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:6px">No signup · No credit card · 3 scans only</div>
+      <div style="text-align:center;font-size:12px;color:rgba(255,215,0,0.65);font-weight:700;margin-bottom:24px">⚡ 237 collectors already grading today</div>
+
+      <!-- Divider -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.2);font-weight:600">already have an account?</div>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
+      </div>
+    </div>
+
+    <!-- AUTH FORMS (login/signup — hidden by default) -->
+    <div id="auth-forms-wrap" style="display:none;max-width:480px;margin:0 auto;padding:0 20px 32px">
+    <div class="auth-layout" style="flex-direction:column;gap:20px">
       <div class="auth-left">
         <div><div class="brand">CardsQuest</div><div class="brand-sub">AI card grading · Live pricing · PokeAPI + TCG API</div></div>
         <div class="pcard-wrap">
@@ -576,8 +678,9 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         </div>
       </div>
     </div>
-  </div>
-</div>
+    </div><!-- close auth-forms-wrap -->
+  </div><!-- close auth-page -->
+</div><!-- close auth-view -->
 
 <!-- MAIN APP -->
 <div id="main-view">
@@ -907,7 +1010,7 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
       <div style="font-family:'Press Start 2P',cursive;font-size:14px;color:#FFD700;-webkit-text-stroke:3px #2B5CE6;paint-order:stroke fill;text-shadow:2px 2px 0 #1A3A9E;letter-spacing:1px">
         CardsQuest
       </div>
-      <button onclick="document.getElementById('public-view').style.display='none';document.getElementById('auth-view').style.display='flex'" style="background:#F5C518;color:#1a0800;border:none;border-radius:50px;padding:8px 18px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer">
+      <button onclick="document.getElementById('public-view').style.display='none';document.getElementById('auth-view').style.display='block'" style="background:#F5C518;color:#1a0800;border:none;border-radius:50px;padding:8px 18px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer">
         Grade My Cards →
       </button>
     </div>
@@ -916,7 +1019,7 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
     <div style="margin-top:40px;padding:24px;background:rgba(245,197,24,0.08);border:1px solid rgba(245,197,24,0.2);border-radius:16px;text-align:center">
       <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px">Grade your own Pokémon cards free</div>
       <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:16px">PSA-accurate AI grading · Live market prices · Collection tracking</div>
-      <button onclick="document.getElementById('public-view').style.display='none';document.getElementById('auth-view').style.display='flex'" style="background:#F5C518;color:#1a0800;border:none;border-radius:10px;padding:12px 28px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer">
+      <button onclick="document.getElementById('public-view').style.display='none';document.getElementById('auth-view').style.display='block'" style="background:#F5C518;color:#1a0800;border:none;border-radius:10px;padding:12px 28px;font-family:'Outfit',sans-serif;font-weight:800;font-size:15px;cursor:pointer">
         Start Grading Free →
       </button>
     </div>
@@ -1704,7 +1807,127 @@ function sanitise(str){
     .replace(/'/g,'&#39;');
 }
 
-// ── SUPABASE API HELPER ──
+// ── GUEST GRADING (no login required) ──
+let guestFile = null;
+let guestResult = null;
+const GUEST_LM = ['Analyzing card...','Checking centering...','Inspecting corners...','Examining surface...','Calculating value...'];
+
+function showAuthForms(){
+  document.getElementById('auth-forms-wrap').style.display = 'block';
+  document.getElementById('auth-forms-wrap').scrollIntoView({behavior:'smooth'});
+}
+
+function guestLoadFile(f){
+  if(!f) return;
+  guestFile = f;
+  const rd = new FileReader();
+  rd.onload = ev => {
+    document.getElementById('guest-preview-img').src = ev.target.result;
+    document.getElementById('guest-upload-preview').style.display = 'block';
+    document.getElementById('guest-upload-placeholder').style.display = 'none';
+    document.getElementById('guest-grade-btn').disabled = false;
+    document.getElementById('guest-grade-btn').style.opacity = '1';
+  };
+  rd.readAsDataURL(f);
+}
+
+async function doGuestGrade(){
+  if(!guestFile){ toast('Upload a card photo first'); return; }
+  const btn = document.getElementById('guest-grade-btn');
+  const loading = document.getElementById('guest-loading');
+  btn.disabled = true; btn.style.opacity = '0.5';
+  loading.style.display = 'block';
+  let mi = 0;
+  const iv = setInterval(() => { document.getElementById('guest-loading-txt').textContent = GUEST_LM[mi % GUEST_LM.length]; mi++; }, 1100);
+  try {
+    const b64 = await toB64(guestFile);
+    const mime = guestFile.type || 'image/jpeg';
+    const prompt = `You are a professional Pokémon card grader with PSA expertise.\n\nGrade this card using PSA standards:\n- Centering: 55/45 tolerance for PSA 9, 60/40 for PSA 8\n- Corners: zero whitening for PSA 10, one touch for PSA 9\n- Edges: perfectly smooth for PSA 10\n- Surface: no scratches for PSA 10, very faint for PSA 9\n- Lowest subgrade = grade floor\n\nRespond ONLY with JSON (no markdown):\n{"grade":<1-10>,"gradeLabel":"<Gem Mint|Mint|Near Mint-Mint|Near Mint|Excellent-Mint|Excellent|Very Good-Excellent|Very Good|Good|Poor>","confidence":<50-99>,"estimatedValue":<USD>,"centering":<1-10>,"corners":<1-10>,"edges":<1-10>,"surface":<1-10>,"notes":"<2-3 sentences on condition>"}`;
+    const res = await fetch('/.netlify/functions/grade', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({image: b64, mimeType: mime, prompt})
+    });
+    if(!res.ok) throw new Error('Server error ' + res.status);
+    const d = await res.json();
+    if(d.error) throw new Error(d.error);
+    const p = JSON.parse((d.content || d.text || '').replace(/```json|```/g,'').trim());
+    clearInterval(iv);
+    loading.style.display = 'none';
+    guestResult = p;
+    // Show result in modal
+    document.getElementById('guest-grade-preview').textContent = Math.round(p.grade);
+    document.getElementById('guest-value-preview').textContent = '$' + Number(p.estimatedValue).toLocaleString();
+    document.getElementById('guest-modal').style.display = 'flex';
+  } catch(err) {
+    clearInterval(iv);
+    loading.style.display = 'none';
+    btn.disabled = false; btn.style.opacity = '1';
+    toast('Grading error — ' + (err.message||'').slice(0,60));
+  }
+}
+
+function toggleGuestForm(){
+  const sf = document.getElementById('guest-signup-form');
+  const lf = document.getElementById('guest-login-form');
+  const txt = document.getElementById('guest-toggle-txt');
+  if(sf.style.display === 'none'){
+    sf.style.display = 'block'; lf.style.display = 'none';
+    txt.textContent = 'Already have an account? Login';
+  } else {
+    sf.style.display = 'none'; lf.style.display = 'block';
+    txt.textContent = "Don't have an account? Sign up";
+  }
+}
+
+function showGuestErr(msg){
+  const el = document.getElementById('guest-aerr');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function doGuestSignup(){
+  const nm = document.getElementById('g-nm').value.trim();
+  const em = document.getElementById('g-em').value.trim().toLowerCase();
+  const pw = document.getElementById('g-pw').value;
+  if(!nm||!em||!pw){ showGuestErr('Fill in all fields'); return; }
+  if(pw.length < 6){ showGuestErr('Password needs 6+ chars'); return; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){ showGuestErr('Enter a valid email'); return; }
+  const btn = document.getElementById('guest-signup-btn');
+  btn.disabled = true; btn.textContent = 'Creating account...';
+  const hash = await hashPw(pw);
+  try {
+    const r = await sbCall('signup', {email: em, passwordHash: hash, name: nm});
+    if(!r.success){ showGuestErr(r.error || 'Signup failed'); btn.disabled=false; btn.textContent='Create Free Account & See Result →'; return; }
+    document.getElementById('guest-modal').style.display = 'none';
+    loginOk(r.user, []);
+    // Show result immediately after login
+    if(guestResult) showResult(guestResult);
+    nav('grade', document.querySelector('.ntab'));
+    toast('Welcome ' + nm + '! Here is your grade 🎉');
+  } catch(e) {
+    showGuestErr('Signup failed — check your connection');
+    btn.disabled=false; btn.textContent='Create Free Account & See Result →';
+  }
+}
+
+async function doGuestLogin(){
+  const em = document.getElementById('g-li-em').value.trim().toLowerCase();
+  const pw = document.getElementById('g-li-pw').value;
+  if(!em||!pw){ showGuestErr('Fill in all fields'); return; }
+  const btn = document.getElementById('guest-login-btn');
+  btn.disabled = true; btn.textContent = 'Logging in...';
+  const hash = await hashPw(pw);
+  try {
+    const r = await sbCall('login', {email: em, passwordHash: hash, plainPassword: pw});
+    if(!r.success){ showGuestErr(r.error || 'Login failed'); btn.disabled=false; btn.textContent='Login & See Result →'; return; }
+    document.getElementById('guest-modal').style.display = 'none';
+    loginOk(r.user, r.collection || []);
+    if(guestResult) showResult(guestResult);
+    nav('grade', document.querySelector('.ntab'));
+  } catch(e) {
+    showGuestErr('Login failed — check your connection');
+    btn.disabled=false; btn.textContent='Login & See Result →';
+  }
+}
 const SB_API = '/.netlify/functions/supabase-auth';
 
 async function sbCall(action, data) {
