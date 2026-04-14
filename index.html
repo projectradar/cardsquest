@@ -92,10 +92,7 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
   margin:8px 8px 0;border-radius:9px 9px 0 0;
   border:3px solid #C89800;border-bottom:none;
   overflow:hidden;
-  /* Height based on TCG card ratio 63×88mm ≈ 1.397:1 portrait
-     Card inner art zone is roughly the middle 60% of card height.
-     At app-pcard width 280px, inner width ~248px → height = 248 × 0.72 = 225px */
-  height:230px;
+  height:115px;
   position:relative;background:#0f2744;cursor:pointer;
 }
 .art-img-layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
@@ -671,10 +668,12 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         <div id="f-signup" style="display:none"><input class="afield" id="su-nm" placeholder="Trainer name"/><input class="afield" id="su-em" type="email" placeholder="Email address"/><input class="afield" id="su-pw" type="password" placeholder="Password (min 6 chars)"/><button class="btn-cta" onclick="doSignup()">Create Free Account →</button></div>
         <div class="or-line">demo trainers</div>
         <div class="demo-box">
-          <div class="demo-box-title">Jump in instantly</div>
-          <div class="demo-row"><div><div class="demo-name-t">Ash Ketchum 🔥 14d Gold</div><div class="demo-hint">5 cards · $13,175</div></div><button class="demo-btn" onclick="qlogin('ash@pokégrade.app','Ash Ketchum')">Login ▶</button></div>
-          <div class="demo-row"><div><div class="demo-name-t">Misty Waterflower 💎 32d Plat</div><div class="demo-hint">4 cards · $1,750</div></div><button class="demo-btn" onclick="qlogin('misty@pokégrade.app','Misty Waterflower')">Login ▶</button></div>
-          <div class="demo-row"><div><div class="demo-name-t">Brock Harrison 🥉 5d Bronze</div><div class="demo-hint">3 cards · $152</div></div><button class="demo-btn" onclick="qlogin('brock@pokégrade.app','Brock Harrison')">Login ▶</button></div>
+          <div class="demo-box-title">🏆 Top Scanners This Week</div>
+          <div class="demo-row"><div><div class="demo-name-t">CollectorMike_99 🔥</div><div class="demo-hint">47 cards graded · $28,450 collection</div></div><div style="font-size:11px;font-weight:800;color:#FFD700">#1</div></div>
+          <div class="demo-row"><div><div class="demo-name-t">PokeHunterSarah 💎</div><div class="demo-hint">38 cards graded · $19,200 collection</div></div><div style="font-size:11px;font-weight:800;color:#C0C0C0">#2</div></div>
+          <div class="demo-row"><div><div class="demo-name-t">VintageCardKing ⚡</div><div class="demo-hint">31 cards graded · $14,875 collection</div></div><div style="font-size:11px;font-weight:800;color:#CD7F32">#3</div></div>
+          <div class="demo-row"><div><div class="demo-name-t">BaseSetBrett 🃏</div><div class="demo-hint">24 cards graded · $9,340 collection</div></div><div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.3)">#4</div></div>
+          <div class="demo-row" style="margin-bottom:0"><div><div class="demo-name-t">PsychicQueenJess 🔮</div><div class="demo-hint">19 cards graded · $6,120 collection</div></div><div style="font-size:11px;font-weight:800;color:rgba(255,255,255,0.3)">#5</div></div>
         </div>
       </div>
     </div>
@@ -2108,19 +2107,45 @@ async function doGrade(){
   if(!curFile){toast('Upload a card photo first');return}
   const scanLimit=getScanLimit(curUser?.email);
   if(scansUsed>=scanLimit){
-    // Show upgrade prompt based on current plan
+    // Show upgrade prompt — all 3 plans side by side
     document.getElementById('save-area').style.display='none';
     const planKey=getUserPlan(curUser?.email);
-    const upMsg=planKey==='free'
-      ?{title:'3 free scans used',body:'Upgrade to Starter for 25 scans/month + card sharing for just $7.99/mo',btn:'Upgrade to Starter — $7.99/mo'}
-      :planKey==='starter'
-      ?{title:'25 scans used this month',body:'Upgrade to Pro for unlimited grading, live market prices, and priority processing',btn:'Upgrade to Pro — $19/mo'}
-      :{title:'Monthly scans used',body:'Your scans reset at the start of next month',btn:'View Pricing'};
+    const title = planKey==='free' ? '⚡ You\'ve used your 3 free scans' : planKey==='starter' ? '⚡ You\'ve used all 25 scans this month' : '⚡ Monthly scans used — reset next month';
     document.getElementById('notes-area').innerHTML=`
-      <div style="background:#FEF3C7;border:1.5px solid rgba(217,119,6,0.3);border-radius:10px;padding:14px;margin-top:12px;text-align:center">
-        <div style="font-size:15px;font-weight:700;color:#92400E;margin-bottom:6px">${upMsg.title}</div>
-        <div style="font-size:12px;color:#78350F;margin-bottom:12px">${upMsg.body}</div>
-        <button onclick="nav('pricing',document.querySelector('.ntab:nth-child(4)'))" style="background:#C8960C;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-family:'Outfit',sans-serif;font-weight:700;font-size:13px;cursor:pointer">${upMsg.btn} →</button>
+      <div style="background:rgba(7,8,13,0.95);border:1.5px solid rgba(255,215,0,0.3);border-radius:14px;padding:16px;margin-top:12px">
+        <div style="text-align:center;font-size:14px;font-weight:800;color:#FFD700;margin-bottom:4px">${title}</div>
+        <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:16px">Choose a plan to keep grading</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
+          <!-- Starter -->
+          <div style="background:rgba(37,99,235,0.08);border:1.5px solid rgba(37,99,235,0.3);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:9px;font-weight:700;color:#60A5FA;letter-spacing:1.5px;margin-bottom:6px">STARTER</div>
+            <div style="font-size:26px;font-weight:900;color:#fff;line-height:1;margin-bottom:2px">$7.99</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-bottom:10px">/month</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:4px">✓ 25 scans/mo</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:10px">✓ Card sharing</div>
+            <button onclick="startCheckout('starter')" style="width:100%;background:#2563EB;color:#fff;border:none;border-radius:7px;padding:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;cursor:pointer">Choose →</button>
+          </div>
+          <!-- Pro — featured -->
+          <div style="background:rgba(255,215,0,0.07);border:2px solid rgba(255,215,0,0.5);border-radius:10px;padding:12px;text-align:center;position:relative">
+            <div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#FFD700;color:#080808;font-size:8px;font-weight:900;padding:2px 8px;border-radius:10px;white-space:nowrap">MOST POPULAR</div>
+            <div style="font-size:9px;font-weight:700;color:#FFD700;letter-spacing:1.5px;margin-bottom:6px">PRO</div>
+            <div style="font-size:26px;font-weight:900;color:#FFD700;line-height:1;margin-bottom:2px">$19</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-bottom:10px">/month</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:4px">✓ Unlimited scans</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:10px">✓ Live prices</div>
+            <button onclick="startCheckout('pro')" style="width:100%;background:#FFD700;color:#080808;border:none;border-radius:7px;padding:8px;font-family:'Outfit',sans-serif;font-weight:900;font-size:11px;cursor:pointer">Choose →</button>
+          </div>
+          <!-- Lifetime -->
+          <div style="background:rgba(168,85,247,0.08);border:1.5px solid rgba(168,85,247,0.3);border-radius:10px;padding:12px;text-align:center">
+            <div style="font-size:9px;font-weight:700;color:#C084FC;letter-spacing:1.5px;margin-bottom:6px">LIFETIME</div>
+            <div style="font-size:26px;font-weight:900;color:#fff;line-height:1;margin-bottom:2px">$149</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-bottom:10px">one time</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:4px">✓ Unlimited forever</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:10px">✓ Everything in Pro</div>
+            <button onclick="startCheckout('lifetime')" style="width:100%;background:#A855F7;color:#fff;border:none;border-radius:7px;padding:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;cursor:pointer">Choose →</button>
+          </div>
+        </div>
+        <div style="text-align:center;font-size:10px;color:rgba(255,255,255,0.2)">Secure payment via Stripe · Cancel anytime</div>
       </div>`;
     return;
   }
