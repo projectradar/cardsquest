@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>CardsQuest — Find Out What Your Pokémon Card Is Worth | Free AI Grading</title>
-<meta name="description" content="Free AI Pokémon card grading. Upload your card, get a PSA-accurate grade and live market value in 10 seconds. No signup required. Try 3 scans free."/>
+<meta name="description" content="Free AI Pokémon card grading. Upload your card, get a PSA-accurate grade and live market value in 10 seconds. No signup required. Try 2 scans free."/>
 <meta name="keywords" content="pokemon card grading, AI card grading, PSA grade predictor, pokemon card value, how much is my pokemon card worth, free pokemon card grader, CardsQuest"/>
 <meta property="og:title" content="CardsQuest — Find Out What Your Pokémon Card Is Worth"/>
 <meta property="og:description" content="Free AI grading. Upload your card, get a PSA-accurate grade and live market value in 10 seconds. No signup required."/>
@@ -65,6 +65,7 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
 .cs-dot{width:7px;height:7px;border-radius:50%}
 
 /* ════ AUTH ════ */
+@keyframes pulse-border{0%,100%{border-color:rgba(255,215,0,0.6)}50%{border-color:rgba(255,215,0,1)}}
 .auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 16px;background:#0E0E14;position:relative;overflow:hidden}
 .bg-cards{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .bgc{position:absolute;width:80px;height:110px;border-radius:8px;border:2px solid rgba(212,160,23,0.18);background:rgba(27,63,110,0.25)}
@@ -596,37 +597,38 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
       <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:12px">
         <div style="font-size:10px;font-weight:700;color:rgba(255,215,0,0.7);letter-spacing:1px;margin-bottom:8px">💡 Tips for best results</div>
         <div style="display:flex;flex-direction:column;gap:5px">
-          <div style="font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Good lighting — no glare or shadows</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Shoot straight-on to avoid distortion</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Card should be clear and in focus</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Remove sleeve if possible for accurate grade</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.9);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Good lighting — no glare or shadows</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.9);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Shoot straight-on to avoid distortion</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.9);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Card should be clear and in focus</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.9);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Remove sleeve if possible for accurate grade</div>
         </div>
       </div>
 
       <!-- Upload zone -->
-      <div id="guest-upload-zone" onclick="document.getElementById('guest-file-input').click()" style="border:2px dashed rgba(255,215,0,0.4);border-radius:14px;padding:28px 20px;text-align:center;margin-bottom:14px;background:rgba(255,215,0,0.03);cursor:pointer;transition:.2s"
-        onmouseover="this.style.borderColor='rgba(255,215,0,0.7)';this.style.background='rgba(255,215,0,0.06)'"
-        onmouseout="this.style.borderColor='rgba(255,215,0,0.4)';this.style.background='rgba(255,215,0,0.03)'">
+      <div id="guest-upload-zone" onclick="document.getElementById('guest-file-input').click()" style="border:3px dashed #FFD700;border-radius:20px;padding:40px 24px;text-align:center;margin-bottom:16px;background:rgba(255,215,0,0.08);cursor:pointer;transition:.2s;animation:pulse-border 1.5s ease-in-out infinite;box-shadow:0 0 32px rgba(255,215,0,0.15)"
+        onmouseover="this.style.background='rgba(255,215,0,0.15)';this.style.boxShadow='0 0 48px rgba(255,215,0,0.3)'"
+        onmouseout="this.style.background='rgba(255,215,0,0.08)';this.style.boxShadow='0 0 32px rgba(255,215,0,0.15)'">
         <div id="guest-upload-preview" style="display:none;margin-bottom:10px">
           <img id="guest-preview-img" style="max-height:160px;border-radius:10px;border:2px solid rgba(255,215,0,0.4)"/>
         </div>
         <div id="guest-upload-placeholder">
-          <div style="font-size:32px;margin-bottom:8px">📸</div>
-          <div style="font-size:15px;font-weight:700;color:#FFD700;margin-bottom:4px">Upload your card photo</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.35)">Tap to choose from camera roll</div>
+          <div style="font-size:56px;margin-bottom:12px;filter:drop-shadow(0 0 16px rgba(255,215,0,0.6))">📸</div>
+          <div style="font-size:22px;font-weight:900;color:#FFD700;margin-bottom:6px;text-shadow:0 0 20px rgba(255,215,0,0.5)">TAP TO UPLOAD YOUR CARD</div>
+          <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:8px">Choose from camera roll or take a photo</div>
+          <div style="display:inline-block;background:#FFD700;color:#080808;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:800;letter-spacing:1px">FREE — NO SIGNUP NEEDED</div>
         </div>
       </div>
       <input type="file" id="guest-file-input" accept="image/*" style="display:none" onchange="guestLoadFile(this.files[0])"/>
 
       <!-- Grade button -->
-      <button id="guest-grade-btn" onclick="doGuestGrade()" disabled style="width:100%;padding:15px;background:#FFD700;color:#0A0808;border:none;border-radius:12px;font-family:'Outfit',sans-serif;font-weight:900;font-size:16px;cursor:pointer;opacity:0.5;transition:.2s;margin-bottom:8px">Grade My Card Free →</button>
+      <button id="guest-grade-btn" onclick="doGuestGrade()" style="width:100%;padding:18px;background:#FFD700;color:#0A0808;border:none;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:900;font-size:20px;cursor:pointer;transition:.2s;margin-bottom:8px;box-shadow:0 8px 32px rgba(255,215,0,0.4);letter-spacing:.5px" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 40px rgba(255,215,0,0.6)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 32px rgba(255,215,0,0.4)'">⚡ Grade My Card Free →</button>
 
       <!-- Loading state -->
       <div id="guest-loading" style="display:none;text-align:center;padding:14px">
         <div style="font-size:13px;color:rgba(255,215,0,0.8);font-weight:600" id="guest-loading-txt">Analyzing your card...</div>
       </div>
 
-      <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:6px">Try 3 scans free — no signup required</div>
+      <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.25);margin-bottom:6px">Try 2 scans free — no signup required</div>
       <div style="text-align:center;font-size:12px;color:rgba(255,215,0,0.65);font-weight:700;margin-bottom:16px">⚡ 1,000+ collectors already scanning and collecting</div>
 
       <!-- ANIMATED DEMO -->
@@ -884,13 +886,13 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         </p>
 
         <!-- TIPS -->
-        <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+        <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:12px 14px;margin-bottom:14px">
           <div style="font-size:10px;font-weight:700;color:rgba(255,215,0,0.7);letter-spacing:1px;margin-bottom:8px">💡 Tips for best results</div>
           <div style="display:flex;flex-direction:column;gap:5px">
-            <div style="font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Good lighting — no glare or shadows</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Shoot straight-on to avoid distortion</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Card should be clear and in focus</div>
-            <div style="font-size:11px;color:rgba(255,255,255,0.75);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Remove sleeve if possible for accurate grade</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.9);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Good lighting — no glare or shadows</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.9);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Shoot straight-on to avoid distortion</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.9);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Card should be clear and in focus</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.9);display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Remove sleeve if possible for accurate grade</div>
           </div>
         </div>
 
@@ -953,7 +955,7 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         <div class="plan-price">$0 <span>/mo</span></div>
         <div class="plan-sub">Try it, no card required</div>
         <ul class="pf">
-          <li><span class="chk">✓</span> 3 scans / month</li>
+          <li><span class="chk">✓</span> 2 scans free</li>
           <li><span class="chk">✓</span> PSA-accurate AI grading</li>
           <li><span class="chk">✓</span> TCG card search + PokeAPI</li>
           <li><span class="chk">✓</span> Daily streak tracking</li>
@@ -1794,7 +1796,7 @@ function loginOk(em, nm) {
   }
 }
 const PLANS={
-  free:    {name:'Free',    scans:3,   price:0,    sharing:false, livePrices:false,  priority:false},
+  free:    {name:'Free',    scans:2,   price:0,    sharing:false, livePrices:false,  priority:false},
   starter: {name:'Starter', scans:25,  price:7.99, sharing:true,  livePrices:false,  priority:false},
   pro:     {name:'Pro',     scans:Infinity, price:19, sharing:true, livePrices:true, priority:true},
   lifetime:{name:'Lifetime',scans:Infinity, price:149,sharing:true, livePrices:true, priority:true},
@@ -1966,14 +1968,17 @@ function guestLoadFile(f){
     document.getElementById('guest-preview-img').src = ev.target.result;
     document.getElementById('guest-upload-preview').style.display = 'block';
     document.getElementById('guest-upload-placeholder').style.display = 'none';
-    document.getElementById('guest-grade-btn').disabled = false;
-    document.getElementById('guest-grade-btn').style.opacity = '1';
+    document.getElementById('guest-grade-btn').textContent = 'Grade This Card Free →';
   };
   rd.readAsDataURL(f);
 }
 
 async function doGuestGrade(){
-  if(!guestFile){ toast('Upload a card photo first'); return; }
+  if(!guestFile){ 
+    document.getElementById('guest-file-input').click();
+    toast('📸 Choose your card photo first');
+    return; 
+  }
   const btn = document.getElementById('guest-grade-btn');
   const loading = document.getElementById('guest-loading');
   btn.disabled = true; btn.style.opacity = '0.5';
@@ -2252,7 +2257,7 @@ async function doGrade(){
     // Show upgrade prompt — all 3 plans side by side
     document.getElementById('save-area').style.display='none';
     const planKey=getUserPlan(curUser?.email);
-    const title = planKey==='free' ? '⚡ You\'ve used your 3 free scans' : planKey==='starter' ? '⚡ You\'ve used all 25 scans this month' : '⚡ Monthly scans used — reset next month';
+    const title = planKey==='free' ? '⚡ You\'ve used your 2 free scans' : planKey==='starter' ? '⚡ You\'ve used all 25 scans this month' : '⚡ Monthly scans used — reset next month';
     document.getElementById('notes-area').innerHTML=`
       <div style="background:rgba(7,8,13,0.95);border:1.5px solid rgba(255,215,0,0.3);border-radius:14px;padding:16px;margin-top:12px">
         <div style="text-align:center;font-size:14px;font-weight:800;color:#FFD700;margin-bottom:4px">${title}</div>
