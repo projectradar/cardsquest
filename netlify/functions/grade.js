@@ -75,18 +75,24 @@ exports.handler = async (event) => {
   const safeMime = ['image/jpeg','image/png','image/webp','image/gif'].includes(mimeType) ? mimeType : 'image/jpeg';
 
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
+      signal: controller.signal,
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
-        max_tokens: 800,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: safeMime, data: image } },
           { type: 'text', text: prompt }
         ]}]
       })
     });
+
+    clearTimeout(timeout);
 
     if (!res.ok) {
       console.error('Anthropic error:', res.status);
@@ -98,6 +104,10 @@ exports.handler = async (event) => {
     return { statusCode: 200, headers, body: JSON.stringify({ content: text }) };
 
   } catch (err) {
+    if(err.name === 'AbortError') {
+      console.error('Grade timeout');
+      return { statusCode: 504, headers, body: JSON.stringify({ error: 'Grading timed out — try a smaller image' }) };
+    }
     console.error('Grade error:', err.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Internal error' }) };
   }
