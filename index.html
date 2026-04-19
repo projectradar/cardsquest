@@ -694,6 +694,40 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         <div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5">Find out what yours is worth in 10 seconds — free.<br/><span style="color:#FFD700;font-weight:900;font-size:14px">⚡ EARN XP FOR EVERY SCAN</span></div>
       </div>
 
+      <!-- TRIGGER 3: FEAR BOX -->
+      <div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <div style="font-size:20px;flex-shrink:0;font-weight:900;color:#FFD700">!</div>
+        <div style="font-size:13px;color:#ffffff;font-weight:700;line-height:1.5">You might be sitting on a $100+ card without knowing it!</div>
+      </div>
+
+      <!-- TRIGGER 4: UPLOAD ZONE -->
+      <div id="guest-upload-zone" onclick="document.getElementById('guest-file-input').click()" style="border:3px solid #FFD700;border-radius:18px;padding:28px 20px;text-align:center;margin-bottom:14px;background:rgba(255,215,0,0.07);cursor:pointer;transition:.2s;animation:pulse-border 1.5s ease-in-out infinite"
+        onmouseover="this.style.background='rgba(255,215,0,0.14)'"
+        onmouseout="this.style.background='rgba(255,215,0,0.07)'">
+        <div id="guest-upload-preview" style="display:none;margin-bottom:10px">
+          <img id="guest-preview-img" style="max-height:140px;border-radius:10px;border:2px solid rgba(255,215,0,0.4)"/>
+        </div>
+        <div id="guest-upload-placeholder">
+          <div style="font-size:44px;margin-bottom:10px">&#128247;</div>
+          <div style="font-size:20px;font-weight:900;color:#FFD700;margin-bottom:4px">TAP TO UPLOAD YOUR CARD</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:10px">Find out what your card is worth</div>
+          <div style="display:inline-block;background:#FFD700;color:#080808;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:.8px">FREE · NO SIGNUP · 2 SCANS</div>
+        </div>
+      </div>
+      <input type="file" id="guest-file-input" accept="image/*" style="display:none" onchange="guestLoadFile(this.files[0])"/>
+
+      <!-- Loading state -->
+      <div id="guest-loading" style="display:none;text-align:center;padding:10px">
+        <div style="font-size:13px;color:rgba(255,215,0,0.8);font-weight:600" id="guest-loading-txt">Analyzing your card...</div>
+      </div>
+
+      <!-- TRIGGER 5: CTA BUTTON -->
+      <button id="guest-grade-btn" onclick="doGuestGrade()" style="width:100%;padding:18px;background:#FFD700;color:#080808;border:none;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:900;font-size:19px;cursor:pointer;transition:.2s;margin-bottom:10px;letter-spacing:.3px" onmouseover="this.style.transform='translateY(-2px)';this.style.background='#FFE033'" onmouseout="this.style.transform='translateY(0)';this.style.background='#FFD700'">&#9889; Find Out What My Card Is Worth →</button>
+      <div style="text-align:center;font-size:11px;color:rgba(255,215,0,0.7);font-weight:700;margin-bottom:6px">&#9889; Free · Takes 10 seconds · No signup</div>
+
+      <!-- TRIGGER 6: SOCIAL PROOF -->
+      <div style="text-align:center;margin-bottom:20px"><div style="font-size:12px;color:rgba(255,215,0,0.7);font-weight:700">⚡ 2 free scans remaining today</div></div>
+
       <!-- TRIGGER 2: AUTO-PLAYING DEMO -->
       <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:14px;margin-bottom:14px">
         <div style="font-size:9px;color:rgba(255,215,0,0.5);letter-spacing:2px;font-weight:700;margin-bottom:10px">LIVE DEMO — CHARIZARD VSTAR</div>
@@ -736,40 +770,6 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         </div>
       <div style="background:rgba(255,215,0,0.08);border-radius:8px;padding:8px 12px;text-align:center;font-size:12px;color:#FFD700;font-weight:700;margin-top:8px">Your card could be worth this — find out free ↓</div>
       </div>
-
-      <!-- TRIGGER 3: FEAR BOX -->
-      <div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
-        <div style="font-size:20px;flex-shrink:0;font-weight:900;color:#FFD700">!</div>
-        <div style="font-size:13px;color:#ffffff;font-weight:700;line-height:1.5">You might be sitting on a $100+ card without knowing it!</div>
-      </div>
-
-      <!-- TRIGGER 4: UPLOAD ZONE -->
-      <div id="guest-upload-zone" onclick="document.getElementById('guest-file-input').click()" style="border:3px solid #FFD700;border-radius:18px;padding:28px 20px;text-align:center;margin-bottom:14px;background:rgba(255,215,0,0.07);cursor:pointer;transition:.2s;animation:pulse-border 1.5s ease-in-out infinite"
-        onmouseover="this.style.background='rgba(255,215,0,0.14)'"
-        onmouseout="this.style.background='rgba(255,215,0,0.07)'">
-        <div id="guest-upload-preview" style="display:none;margin-bottom:10px">
-          <img id="guest-preview-img" style="max-height:140px;border-radius:10px;border:2px solid rgba(255,215,0,0.4)"/>
-        </div>
-        <div id="guest-upload-placeholder">
-          <div style="font-size:44px;margin-bottom:10px">&#128247;</div>
-          <div style="font-size:20px;font-weight:900;color:#FFD700;margin-bottom:4px">TAP TO UPLOAD YOUR CARD</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:10px">Find out what your card is worth</div>
-          <div style="display:inline-block;background:#FFD700;color:#080808;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:.8px">FREE · NO SIGNUP · 2 SCANS</div>
-        </div>
-      </div>
-      <input type="file" id="guest-file-input" accept="image/*" style="display:none" onchange="guestLoadFile(this.files[0])"/>
-
-      <!-- Loading state -->
-      <div id="guest-loading" style="display:none;text-align:center;padding:10px">
-        <div style="font-size:13px;color:rgba(255,215,0,0.8);font-weight:600" id="guest-loading-txt">Analyzing your card...</div>
-      </div>
-
-      <!-- TRIGGER 5: CTA BUTTON -->
-      <button id="guest-grade-btn" onclick="doGuestGrade()" style="width:100%;padding:18px;background:#FFD700;color:#080808;border:none;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:900;font-size:19px;cursor:pointer;transition:.2s;margin-bottom:10px;letter-spacing:.3px" onmouseover="this.style.transform='translateY(-2px)';this.style.background='#FFE033'" onmouseout="this.style.transform='translateY(0)';this.style.background='#FFD700'">&#9889; Find Out What My Card Is Worth →</button>
-      <div style="text-align:center;font-size:11px;color:rgba(255,215,0,0.7);font-weight:700;margin-bottom:6px">&#9889; Free · Takes 10 seconds · No signup</div>
-
-      <!-- TRIGGER 6: SOCIAL PROOF -->
-      <div style="text-align:center;margin-bottom:20px"><div style="font-size:12px;color:rgba(255,215,0,0.7);font-weight:700">⚡ 2 free scans remaining today</div></div>
 
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
         <div style="flex:1;height:1px;background:rgba(255,255,255,0.07)"></div>
