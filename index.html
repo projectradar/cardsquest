@@ -2213,10 +2213,22 @@ async function doGuestGrade(){
     const prompt = `You are a professional Pokémon card grader with PSA expertise.\n\nGrade this card using PSA standards:\n- Centering: 55/45 tolerance for PSA 9, 60/40 for PSA 8\n- Corners: zero whitening for PSA 10, one touch for PSA 9\n- Edges: perfectly smooth for PSA 10\n- Surface: no scratches for PSA 10, very faint for PSA 9\n- Lowest subgrade = grade floor\n\nRespond ONLY with JSON (no markdown):\n{"grade":<1-10>,"gradeLabel":"<Gem Mint|Mint|Near Mint-Mint|Near Mint|Excellent-Mint|Excellent|Very Good-Excellent|Very Good|Good|Poor>","confidence":<50-99>,"estimatedValue":<USD>,"centering":<1-10>,"corners":<1-10>,"edges":<1-10>,"surface":<1-10>,"notes":"<2-3 sentences on condition>"}`;
     const res = await fetch('/.netlify/functions/grade', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({image: b64, mimeType: mime, prompt})
+      body: JSON.stringify({image: b64, mimeType: mime, prompt, userEmail: null})
     });
-    if(!res.ok) throw new Error('Server error ' + res.status);
     const d = await res.json();
+    if(!res.ok) {
+      if(d.error === 'scan_limit_reached') {
+        clearInterval(iv);
+        loading.style.display = 'none';
+        btn.disabled = false; btn.style.opacity = '1';
+        // Show signup wall directly
+        document.getElementById('guest-modal-scan2').style.display = 'block';
+        document.getElementById('guest-modal-scan1').style.display = 'none';
+        document.getElementById('guest-modal').style.display = 'flex';
+        return;
+      }
+      throw new Error(d.error || 'Server error ' + res.status);
+    }
     if(d.error) throw new Error(d.error);
     const p = JSON.parse((d.content || d.text || '').replace(/```json|```/g,'').trim());
     clearInterval(iv);
