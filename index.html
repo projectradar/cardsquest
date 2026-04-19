@@ -2746,7 +2746,7 @@ function showResult(p){
     const n = parseFloat(v)||0;
     const col = n>=9?'#22C55E':n>=7?'#FFD700':n>=5?'#F97316':'#EF4444';
     return `<div style="display:flex;align-items:center;gap:8px">
-      <div style="font-size:12px;color:rgba(255,255,255,0.55);width:76px;flex-shrink:0">${l}</div>
+      <div style="font-size:12px;color:#1a1a1a;font-weight:600;width:76px;flex-shrink:0">${l}</div>
       <div style="flex:1;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden">
         <div style="height:100%;width:${n*10}%;background:${col};border-radius:3px;transition:width .6s ease"></div>
       </div>
@@ -2782,17 +2782,17 @@ function showResult(p){
       </div>
 
       <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px;margin-bottom:12px">
-        <div style="font-size:10px;font-weight:700;color:rgba(255,215,0,0.6);letter-spacing:1.5px;margin-bottom:12px">SUBGRADE BREAKDOWN</div>
+        <div style="font-size:10px;font-weight:700;color:#FFD700;letter-spacing:1.5px;margin-bottom:12px">SUBGRADE BREAKDOWN</div>
         <div style="display:flex;flex-direction:column;gap:10px">
           ${subgradeHTML}
         </div>
         <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:11px;color:rgba(255,255,255,0.4)">AI Confidence</div>
+          <div style="font-size:11px;color:#444;font-weight:600">AI Confidence</div>
           <div style="font-size:12px;font-weight:700;color:#FFD700">${p.confidence||0}%</div>
         </div>
       </div>
 
-      ${p.notes?`<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;padding:0 2px">${sanitise(p.notes)}</div>`:''}
+      ${p.notes?`<div style="font-size:12px;color:#333;line-height:1.6;padding:0 2px;background:rgba(255,255,255,0.06);border-radius:8px;padding:10px 12px;margin-top:4px">${sanitise(p.notes)}</div>`:''}
     </div>`;
 
   // Hide upload zone, show save area
