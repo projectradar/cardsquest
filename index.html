@@ -2589,10 +2589,10 @@ async function doGrade(){
   let mi=0;const iv=setInterval(()=>{document.getElementById('ltxt').textContent=LM[mi%LM.length];mi++},1100);
   try{
     const b64=await toB64(curFile);const mime=curFile.type||'image/jpeg';
-    const cardName=document.getElementById('d-name').textContent;
-    const cardSet=document.getElementById('d-set').textContent;
-    const cardType=document.getElementById('d-type').textContent;
-    const cardHp=document.getElementById('d-hp').textContent;
+    const cardName=document.getElementById('d-name')?.textContent||'Unknown Card';
+    const cardSet=document.getElementById('d-set')?.textContent||'';
+    const cardType=document.getElementById('d-type')?.textContent||'';
+    const cardHp=document.getElementById('d-hp')?.textContent||'';
     const cardInfo=currentCardData?`Card: ${cardName}, Set: ${cardSet}, Type: ${cardType}, HP: ${cardHp}.`:`Card: ${cardName}.`;
     const prompt=`You are a professional Pokémon card grader with PSA expertise. ${cardInfo}\n\nGrade this card using PSA standards:\n- Centering: 55/45 tolerance for PSA 9, 60/40 for PSA 8\n- Corners: zero whitening for PSA 10, one touch for PSA 9\n- Edges: perfectly smooth for PSA 10\n- Surface: no scratches for PSA 10, very faint for PSA 9\n- Lowest subgrade = grade floor\n\nRespond ONLY with JSON (no markdown):\n{"grade":<1-10>,"gradeLabel":"<Gem Mint|Mint|Near Mint-Mint|Near Mint|Excellent-Mint|Excellent|Very Good-Excellent|Very Good|Good|Poor>","confidence":<50-99>,"estimatedValue":<USD>,"centering":<1-10>,"corners":<1-10>,"edges":<1-10>,"surface":<1-10>,"notes":"<2-3 sentences on condition>"}`;
 
@@ -2600,13 +2600,19 @@ async function doGrade(){
     const res=await fetch('/.netlify/functions/grade',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({image:b64,mimeType:mime,prompt})
+      body:JSON.stringify({image:b64,mimeType:mime,prompt,userEmail:curUser?.email||null})
     });
-    if(!res.ok){
-      const errText=await res.text();
-      throw new Error(errText||'Server error '+res.status);
-    }
     const d=await res.json();
+    if(!res.ok){
+      if(d.error==='scan_limit_reached'){
+        clearInterval(iv);
+        document.getElementById('loading-w').classList.remove('show');
+        document.getElementById('grade-btn').disabled=false;
+        toast('Scan limit reached — upgrade to continue grading');
+        return;
+      }
+      throw new Error(d.error||d.message||'Server error '+res.status);
+    }
     if(d.error)throw new Error(d.error);
     const p=JSON.parse((d.content||d.text||'').replace(/```json|```/g,'').trim());
     clearInterval(iv);
@@ -2621,14 +2627,14 @@ async function doGrade(){
     showResult(p);
   }catch(err){
     clearInterval(iv);
-    // Friendly error message
+    document.getElementById('loading-w').classList.remove('show');
+    document.getElementById('grade-btn').disabled=false;
     const msg=err.message||'';
     if(msg.includes('fetch')||msg.includes('network')||msg.includes('Failed')){
-      toast('Could not reach grading server — deploy to Netlify to enable grading');
+      toast('Could not reach grading server — check your connection');
     } else {
-      toast('Grading error: '+msg.slice(0,60));
+      toast('Grading error: '+msg.slice(0,80));
     }
-    document.getElementById('grade-btn').disabled=false;
   }
   document.getElementById('loading-w').classList.remove('show');
 }
