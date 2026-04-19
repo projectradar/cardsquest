@@ -806,9 +806,19 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
   <div class="hdr">
     <div class="logo">CardsQuest</div>
     <div class="hdr-r">
-      <div class="streak-chip none" id="streak-chip" onclick="nav('streak',document.getElementById('ntab-streak'))">
-        <div class="si" id="si">🃏</div>
-        <div><div class="streak-days" id="sdays">0 days</div><div class="streak-tier-lbl" id="stlbl">No streak</div></div>
+      <div style="display:flex;align-items:center;gap:7px;padding:5px 12px 5px 7px;border-radius:50px;cursor:pointer;background:rgba(255,215,0,0.1);border:1.5px solid rgba(255,215,0,0.3);transition:.2s" id="streak-chip" onclick="nav('streak',document.getElementById('ntab-streak'))" onmouseover="this.style.background='rgba(255,215,0,0.18)'" onmouseout="this.style.background='rgba(255,215,0,0.1)'">
+        <svg width="22" height="22" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+          <path d="M10,40 A30,30 0 0,0 70,40 Z" fill="#F0F0F0"/>
+          <path d="M10,40 A30,30 0 0,1 70,40 Z" fill="#E63232"/>
+          <circle cx="40" cy="40" r="30" fill="none" stroke="#C8960C" stroke-width="5"/>
+          <rect x="10" y="36" width="60" height="8" fill="#C8960C"/>
+          <circle cx="40" cy="40" r="9" fill="#fff" stroke="#C8960C" stroke-width="3"/>
+          <circle cx="40" cy="40" r="4" fill="#FFD700"/>
+        </svg>
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--ink);line-height:1.2" id="xp-total">0 XP</div>
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--ink3)" id="xp-rank">Beginner</div>
+        </div>
       </div>
       <div class="u-chip"><div class="u-av" id="u-av">?</div><div class="u-nm" id="u-nm">Trainer</div></div>
       <span id="plan-badge" style="display:none;font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;border:1px solid;letter-spacing:.4px;text-transform:uppercase"></span>
