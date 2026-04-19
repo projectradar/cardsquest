@@ -1511,11 +1511,11 @@ function applyTCGCardToShell(card) {
 
   // Show card info banner
   const banner = document.getElementById('card-banner');
-  banner.classList.add('show');
-  document.getElementById('cib-img').src = card.images?.small || '';
-  document.getElementById('cib-name').textContent = card.name;
-  document.getElementById('cib-sub').textContent = `${card.set?.name || ''} · ${card.rarity || ''} · HP ${card.hp || '?'}`;
-  document.getElementById('cib-price').textContent = bestPrice ? `TCGPlayer market: $${bestPrice.toFixed(2)}` : 'No price data available';
+  if(banner) banner.classList.add('show');
+  const cibImg=document.getElementById('cib-img');if(cibImg)cibImg.src=card.images?.small||'';
+  const cibName=document.getElementById('cib-name');if(cibName)cibName.textContent=card.name;
+  const cibSub=document.getElementById('cib-sub');if(cibSub)cibSub.textContent=`${card.set?.name||''} · ${card.rarity||''} · HP ${card.hp||'?'}`;
+  const cibPrice=document.getElementById('cib-price');if(cibPrice)cibPrice.textContent=bestPrice?`TCGPlayer market: $${bestPrice.toFixed(2)}`:'No price data available';
 
   // Price breakdown
   if (prices) {
@@ -1535,8 +1535,7 @@ function applyTCGCardToShell(card) {
 
     // Update g-val with market price
     const gv = document.getElementById('g-val');
-    gv.textContent = `$${bestPrice?.toFixed(2) || '?'} market`;
-    gv.style.display = 'inline-block';
+    if(gv){gv.textContent=`$${bestPrice?.toFixed(2)||'?'} market`;gv.style.display='inline-block';}
   }
 
   // Badges
@@ -1677,16 +1676,13 @@ function applyPokeAPIToShell({ pk, sp, ev }, name) {
   document.getElementById('d-resist').textContent = RESIST_MAP[primaryType] || '—';
   document.getElementById('d-retreat').textContent = retreatDots;
 
-  const banner = document.getElementById('card-banner');
-  banner.classList.add('show');
-  document.getElementById('cib-img').src = artUrl;
-  document.getElementById('cib-name').textContent = cap(name);
-  document.getElementById('cib-sub').textContent = `HP ${tcgHp} · ${cap(primaryType)} type · ${stageLabel}${evFrom ? ` · Evolves from ${cap(evFrom)}` : ''}`;
-  document.getElementById('cib-price').textContent = flavor;
-  document.getElementById('cib-badges').innerHTML = `
-    <span class="cib-badge badge-pokeapi">PokeAPI</span>
-    <span class="cib-badge badge-cache">Permanently Cached</span>
-  `;
+  const banner2 = document.getElementById('card-banner');
+  if(banner2) banner2.classList.add('show');
+  const ci2=document.getElementById('cib-img');if(ci2)ci2.src=artUrl;
+  const cn2=document.getElementById('cib-name');if(cn2)cn2.textContent=cap(name);
+  const cs2=document.getElementById('cib-sub');if(cs2)cs2.textContent=`HP ${tcgHp} · ${cap(primaryType)} type · ${stageLabel}${evFrom?` · Evolves from ${cap(evFrom)}`:''}`;
+  const cp2=document.getElementById('cib-price');if(cp2)cp2.textContent=flavor;
+  const cb2=document.getElementById('cib-badges');if(cb2)cb2.innerHTML=`<span class="cib-badge badge-pokeapi">PokeAPI</span><span class="cib-badge badge-cache">Permanently Cached</span>`;
 
   document.getElementById('grade-btn').disabled = false;
   toast(`${cap(name)} loaded from PokeAPI ✓`);
@@ -2509,27 +2505,48 @@ function loadFile(f){curFile=f;const rd=new FileReader();rd.onload=ev=>{curImgSr
   if(prev&&placeholder&&prevImg){prevImg.src=curImgSrc;prev.style.display='block';placeholder.style.display='none';}
   resetGradeResult()};rd.readAsDataURL(f)}
 
-function resetGradeResult(){document.getElementById('g-num').textContent='—';document.getElementById('g-lbl').textContent='Ready to analyze';document.getElementById('g-desc').textContent='Click Analyze & Grade';document.getElementById('g-val').style.display='none';document.getElementById('stat-box').style.display='none';document.getElementById('notes-area').innerHTML='';document.getElementById('save-area').style.display='none';document.getElementById('conf-b').textContent='';curResult=null}
+function resetGradeResult(){
+  const els = {'g-num':'—','g-lbl':'Ready to analyze','g-desc':'Click Analyze & Grade','conf-b':''};
+  Object.entries(els).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.textContent=val;});
+  const gv=document.getElementById('g-val');if(gv)gv.style.display='none';
+  const sb=document.getElementById('stat-box');if(sb)sb.style.display='none';
+  const na=document.getElementById('notes-area');if(na)na.innerHTML='';
+  const sa=document.getElementById('save-area');if(sa)sa.style.display='none';
+  curResult=null;
+}
 
 function clearAll(){
   curFile=null;curResult=null;curImgSrc=null;currentCardData=null;
-  ['art-tcg-layer','art-official-layer','art-photo-layer'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('art-bg').style.display='flex';
-  document.getElementById('art-emoji').textContent='🃏';
+
+  // Restore upload zone
+  const uz=document.getElementById('main-upload-zone');
+  if(uz) uz.style.display='block';
+  const prev=document.getElementById('main-upload-preview');
+  const ph=document.getElementById('main-upload-placeholder');
+  if(prev) prev.style.display='none';
+  if(ph) ph.style.display='block';
+
+  // Safe optional chaining for hidden card elements
+  ['art-tcg-layer','art-official-layer','art-photo-layer'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+  const artBg=document.getElementById('art-bg');if(artBg)artBg.style.display='flex';
+  const artEmoji=document.getElementById('art-emoji');if(artEmoji)artEmoji.textContent='🃏';
+
   document.getElementById('file-in').value='';
-  document.getElementById('tcg-search').value='';document.getElementById('poke-search').value='';
-  document.getElementById('grade-btn').disabled=true;
-  document.getElementById('card-banner').classList.remove('show');
-  document.getElementById('price-area').innerHTML='';
-  resetGradeResult();
-  document.getElementById('g-lbl').textContent='Awaiting scan';document.getElementById('g-desc').textContent='Search + upload to grade';
-  document.getElementById('d-name').textContent='Search a card';document.getElementById('d-hp').textContent='—';
-  document.getElementById('d-stage').textContent='Basic';document.getElementById('d-evoline').textContent='Search to load data';
-  document.getElementById('d-set').textContent='No set loaded';document.getElementById('d-rarity').textContent='—';
-  document.getElementById('d-type').textContent='No type';document.getElementById('d-type').style.cssText='background:#383838;color:#D8D8D8;border:1px solid #666';
-  document.getElementById('d-weak').textContent='—';document.getElementById('d-resist').textContent='—';document.getElementById('d-retreat').textContent='⬤⬤';
-  document.getElementById('d-footer').textContent='CardsQuest AI · 2025';
-  document.getElementById('art-overlay-txt').textContent='📸 Upload your card photo to grade';
+  const tcgS=document.getElementById('tcg-search');if(tcgS)tcgS.value='';
+  const pokeS=document.getElementById('poke-search');if(pokeS)pokeS.value='';
+
+  const gradeBtn=document.getElementById('grade-btn');
+  if(gradeBtn){gradeBtn.disabled=true;gradeBtn.textContent='⚡ Analyze & Grade My Card';}
+
+  const cardBanner=document.getElementById('card-banner');if(cardBanner)cardBanner.classList.remove('show');
+  const priceArea=document.getElementById('price-area');if(priceArea)priceArea.innerHTML='';
+  const notesArea=document.getElementById('notes-area');if(notesArea)notesArea.innerHTML='';
+  document.getElementById('save-area').style.display='none';
+
+  // Reset hidden card elements safely
+  const els={'g-lbl':'Awaiting scan','g-desc':'Search + upload to grade','d-name':'Search a card','d-hp':'—','d-stage':'Basic','d-evoline':'Search to load data','d-set':'No set loaded','d-rarity':'—','d-weak':'—','d-resist':'—','d-retreat':'⬤⬤','d-footer':'CardsQuest AI · 2025','art-overlay-txt':'📸 Upload your card photo to grade'};
+  Object.entries(els).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.textContent=val;});
+  const dtype=document.getElementById('d-type');if(dtype){dtype.textContent='No type';dtype.style.cssText='background:#383838;color:#D8D8D8;border:1px solid #666';}
 }
 
 /* GRADE — routes through Netlify serverless proxy so API key stays server-side */
@@ -2583,7 +2600,7 @@ async function doGrade(){
   const gradeBtn = document.getElementById('grade-btn');
   loadingEl.classList.add('show');
   gradeBtn.disabled = true;
-  document.getElementById('stat-box').style.display='none';
+  const statBox = document.getElementById('stat-box'); if(statBox) statBox.style.display='none';
   document.getElementById('save-area').style.display='none';
   document.getElementById('notes-area').innerHTML='';
 
@@ -2658,17 +2675,86 @@ async function doGrade(){
 function gc(n){return n>=9?'#16A34A':n>=7?'#2563EB':n>=5?'#D97706':'#DC2626'}
 function gbc(n){return n>=8?'sf-hi':'sf-mid'}
 function showResult(p){
-  curResult=p;const g=Math.round(p.grade);
-  document.getElementById('g-num').textContent=g;document.getElementById('g-lbl').textContent=p.gradeLabel||'';document.getElementById('g-desc').textContent='Confidence: '+p.confidence+'%';
-  // Use TCG price if available, otherwise AI estimate
-  const tcgPrice=currentCardData?.source==='tcg' ? (()=>{const prices=currentCardData.card?.tcgplayer?.prices;return prices?.holofoil?.market||prices?.normal?.market||null})() : null;
+  curResult=p;
+  const g=Math.round(p.grade);
+
+  // Also update hidden elements for save/compat
+  const gnEl=document.getElementById('g-num'); if(gnEl) gnEl.textContent=g;
+  const glEl=document.getElementById('g-lbl'); if(glEl) glEl.textContent=p.gradeLabel||'';
+  const gdEl=document.getElementById('g-desc'); if(gdEl) gdEl.textContent='Confidence: '+p.confidence+'%';
+  const gvEl=document.getElementById('g-val'); if(gvEl){gvEl.textContent='$'+Number(p.estimatedValue).toFixed(2);gvEl.style.display='inline-block';}
+  const cbEl=document.getElementById('conf-b'); if(cbEl) cbEl.textContent='Conf: '+p.confidence+'%';
+  const srEl=document.getElementById('stat-rows'); if(srEl) srEl.innerHTML=[['Centering',p.centering],['Corners',p.corners],['Edges',p.edges],['Surface',p.surface]].map(([l,v])=>{const n=Math.round(v);return`<div class="pc-srow"><span class="pc-sname">${l}</span><div class="pc-sbg"><div class="pc-sfill ${gbc(n)}" style="width:${n*10}%"></div></div><span class="pc-sval">${n}</span></div>`}).join('');
+  const sbEl=document.getElementById('stat-box'); if(sbEl) sbEl.style.display='block';
+
+  // Use TCG price if available
+  const tcgPrice=currentCardData?.source==='tcg'?(()=>{const prices=currentCardData.card?.tcgplayer?.prices;return prices?.holofoil?.market||prices?.normal?.market||null})():null;
   const displayVal=tcgPrice||p.estimatedValue;
-  const ve=document.getElementById('g-val');ve.textContent='$'+Number(displayVal).toFixed(2)+(tcgPrice?' TCGPlayer live':' AI est.');ve.style.display='inline-block';
-  document.getElementById('conf-b').textContent='Conf: '+p.confidence+'%';
-  document.getElementById('stat-rows').innerHTML=[['Centering',p.centering],['Corners',p.corners],['Edges',p.edges],['Surface',p.surface]].map(([l,v])=>{const n=Math.round(v);return`<div class="pc-srow"><span class="pc-sname">${l}</span><div class="pc-sbg"><div class="pc-sfill ${gbc(n)}" style="width:${n*10}%"></div></div><span class="pc-sval">${n}</span></div>`}).join('');
-  document.getElementById('stat-box').style.display='block';
-  if(p.notes)document.getElementById('notes-area').innerHTML=`<div class="nbox">${sanitise(p.notes)}</div>`;
-  document.getElementById('save-area').style.display='block';document.getElementById('grade-btn').disabled=false;
+
+  // Grade colour
+  const gradeColor = g>=9?'#22C55E':g>=7?'#FFD700':g>=5?'#F97316':'#EF4444';
+
+  // Build visible result card
+  const subgrades = [['Centering',p.centering],['Corners',p.corners],['Edges',p.edges],['Surface',p.surface]];
+  const subgradeHTML = subgrades.map(([l,v])=>{
+    const n = parseFloat(v)||0;
+    const col = n>=9?'#22C55E':n>=7?'#FFD700':n>=5?'#F97316':'#EF4444';
+    return `<div style="display:flex;align-items:center;gap:8px">
+      <div style="font-size:12px;color:rgba(255,255,255,0.55);width:76px;flex-shrink:0">${l}</div>
+      <div style="flex:1;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${n*10}%;background:${col};border-radius:3px;transition:width .6s ease"></div>
+      </div>
+      <div style="font-size:13px;font-weight:900;color:${col};width:30px;text-align:right">${n.toFixed(1)}</div>
+    </div>`;
+  }).join('');
+
+  // Show card image if uploaded
+  const cardImgHTML = curImgSrc
+    ? `<div style="display:flex;justify-content:center;margin-bottom:14px">
+        <img src="${curImgSrc}" style="height:120px;border-radius:10px;border:2px solid rgba(255,215,0,0.4);object-fit:cover"/>
+       </div>`
+    : '';
+
+  document.getElementById('notes-area').innerHTML=`
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:20px;margin-top:16px">
+
+      <div style="font-size:10px;color:rgba(255,215,0,0.6);letter-spacing:2px;font-weight:700;text-align:center;margin-bottom:14px">GRADE RESULT</div>
+
+      ${cardImgHTML}
+
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        <div style="flex:1;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:14px;text-align:center">
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">PSA GRADE</div>
+          <div style="font-size:52px;font-weight:900;color:${gradeColor};line-height:1">${g}</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px">${p.gradeLabel||''}</div>
+        </div>
+        <div style="flex:1;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);border-radius:12px;padding:14px;text-align:center">
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-bottom:4px">VALUE</div>
+          <div style="font-size:28px;font-weight:900;color:#4ADE80;line-height:1">$${Number(displayVal).toLocaleString()}</div>
+          <div style="font-size:9px;color:rgba(34,197,94,0.5);margin-top:4px">${tcgPrice?'TCGPlayer live':'AI estimate'}</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:rgba(255,215,0,0.6);letter-spacing:1.5px;margin-bottom:12px">SUBGRADE BREAKDOWN</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${subgradeHTML}
+        </div>
+        <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4)">AI Confidence</div>
+          <div style="font-size:12px;font-weight:700;color:#FFD700">${p.confidence||0}%</div>
+        </div>
+      </div>
+
+      ${p.notes?`<div style="font-size:12px;color:rgba(255,255,255,0.5);line-height:1.6;padding:0 2px">${sanitise(p.notes)}</div>`:''}
+    </div>`;
+
+  // Hide upload zone, show save area
+  const uz = document.getElementById('main-upload-zone');
+  if(uz) uz.style.display='none';
+  document.getElementById('save-area').style.display='block';
+  document.getElementById('grade-btn').disabled=false;
+  document.getElementById('grade-btn').textContent='⚡ Grade Another Card';
 }
 function toB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=()=>rej(new Error('fail'));r.readAsDataURL(f)})}
 
