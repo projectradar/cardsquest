@@ -1,0 +1,88 @@
+{
+  "name": "CardsQuest — AI Pokémon Card Grader",
+  "short_name": "CardsQuest",
+  "description": "AI-powered PSA grade prediction for Pokémon cards. Know your grade before you pay grading fees.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07080D",
+  "theme_color": "#FFD700",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["games", "utilities", "finance"],
+  "icons": [
+    {
+      "src": "/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/screen1.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Grade your card in 10 seconds"
+    },
+    {
+      "src": "/screenshots/screen2.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Full PSA grade with subgrades and value"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Grade a Card",
+      "short_name": "Grade",
+      "description": "Instantly grade a Pokémon card",
+      "url": "/?action=grade",
+      "icons": [{ "src": "/icons/icon-96.png", "sizes": "96x96" }]
+    }
+  ]
+}
