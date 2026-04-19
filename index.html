@@ -2539,7 +2539,6 @@ async function doGrade(){
   if(!curFile){toast('Upload a card photo first');return}
   const scanLimit=getScanLimit(curUser?.email);
   if(scansUsed>=scanLimit){
-    // Show upgrade prompt — all 3 plans side by side
     document.getElementById('save-area').style.display='none';
     const planKey=getUserPlan(curUser?.email);
     const title = planKey==='free' ? '⚡ You\'ve used your 2 free scans' : planKey==='starter' ? '⚡ You\'ve used all 25 scans this month' : '⚡ Monthly scans used — reset next month';
@@ -2548,7 +2547,6 @@ async function doGrade(){
         <div style="text-align:center;font-size:14px;font-weight:800;color:#FFD700;margin-bottom:4px">${title}</div>
         <div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:16px">Choose a plan to keep grading</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
-          <!-- Starter -->
           <div style="background:rgba(37,99,235,0.08);border:1.5px solid rgba(37,99,235,0.3);border-radius:10px;padding:12px;text-align:center">
             <div style="font-size:9px;font-weight:700;color:#60A5FA;letter-spacing:1.5px;margin-bottom:6px">STARTER</div>
             <div style="font-size:26px;font-weight:900;color:#fff;line-height:1;margin-bottom:2px">$7.99</div>
@@ -2557,7 +2555,6 @@ async function doGrade(){
             <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:10px">✓ Card sharing</div>
             <button onclick="startCheckout('starter')" style="width:100%;background:#2563EB;color:#fff;border:none;border-radius:7px;padding:8px;font-family:'Outfit',sans-serif;font-weight:700;font-size:11px;cursor:pointer">Choose →</button>
           </div>
-          <!-- Pro — featured -->
           <div style="background:rgba(255,215,0,0.07);border:2px solid rgba(255,215,0,0.5);border-radius:10px;padding:12px;text-align:center;position:relative">
             <div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:#FFD700;color:#080808;font-size:8px;font-weight:900;padding:2px 8px;border-radius:10px;white-space:nowrap">MOST POPULAR</div>
             <div style="font-size:9px;font-weight:700;color:#FFD700;letter-spacing:1.5px;margin-bottom:6px">PRO</div>
@@ -2567,7 +2564,6 @@ async function doGrade(){
             <div style="font-size:10px;color:rgba(255,255,255,0.55);margin-bottom:10px">✓ Live prices</div>
             <button onclick="startCheckout('pro')" style="width:100%;background:#FFD700;color:#080808;border:none;border-radius:7px;padding:8px;font-family:'Outfit',sans-serif;font-weight:900;font-size:11px;cursor:pointer">Choose →</button>
           </div>
-          <!-- Lifetime -->
           <div style="background:rgba(168,85,247,0.08);border:1.5px solid rgba(168,85,247,0.3);border-radius:10px;padding:12px;text-align:center">
             <div style="font-size:9px;font-weight:700;color:#C084FC;letter-spacing:1.5px;margin-bottom:6px">LIFETIME</div>
             <div style="font-size:26px;font-weight:900;color:#fff;line-height:1;margin-bottom:2px">$149</div>
@@ -2581,62 +2577,82 @@ async function doGrade(){
       </div>`;
     return;
   }
-  document.getElementById('loading-w').classList.add('show');
-  document.getElementById('grade-btn').disabled=true;
+
+  // Reset UI
+  const loadingEl = document.getElementById('loading-w');
+  const gradeBtn = document.getElementById('grade-btn');
+  loadingEl.classList.add('show');
+  gradeBtn.disabled = true;
   document.getElementById('stat-box').style.display='none';
   document.getElementById('save-area').style.display='none';
   document.getElementById('notes-area').innerHTML='';
-  let mi=0;const iv=setInterval(()=>{document.getElementById('ltxt').textContent=LM[mi%LM.length];mi++},1100);
+
+  let mi=0;
+  const iv=setInterval(()=>{
+    const ltxt = document.getElementById('ltxt');
+    if(ltxt) ltxt.textContent=LM[mi%LM.length];
+    mi++;
+  },1100);
+
   try{
-    const b64=await toB64(curFile);const mime=curFile.type||'image/jpeg';
+    console.log('doGrade: converting image...');
+    const b64=await toB64(curFile);
+    const mime=curFile.type||'image/jpeg';
+    console.log('doGrade: image ready, size:', Math.round(b64.length/1024)+'KB');
+
     const cardName=document.getElementById('d-name')?.textContent||'Unknown Card';
     const cardSet=document.getElementById('d-set')?.textContent||'';
     const cardType=document.getElementById('d-type')?.textContent||'';
     const cardHp=document.getElementById('d-hp')?.textContent||'';
-    const cardInfo=currentCardData?`Card: ${cardName}, Set: ${cardSet}, Type: ${cardType}, HP: ${cardHp}.`:`Card: ${cardName}.`;
+    const cardInfo=currentCardData?`Card: ${cardName}, Set: ${cardSet}, Type: ${cardType}, HP: ${cardHp}.`:`Unknown card.`;
+
     const prompt=`You are a professional Pokémon card grader with PSA expertise. ${cardInfo}\n\nGrade this card using PSA standards:\n- Centering: 55/45 tolerance for PSA 9, 60/40 for PSA 8\n- Corners: zero whitening for PSA 10, one touch for PSA 9\n- Edges: perfectly smooth for PSA 10\n- Surface: no scratches for PSA 10, very faint for PSA 9\n- Lowest subgrade = grade floor\n\nRespond ONLY with JSON (no markdown):\n{"grade":<1-10>,"gradeLabel":"<Gem Mint|Mint|Near Mint-Mint|Near Mint|Excellent-Mint|Excellent|Very Good-Excellent|Very Good|Good|Poor>","confidence":<50-99>,"estimatedValue":<USD>,"centering":<1-10>,"corners":<1-10>,"edges":<1-10>,"surface":<1-10>,"notes":"<2-3 sentences on condition>"}`;
 
-    // Call Netlify serverless proxy — API key stored securely on server
+    console.log('doGrade: calling grade function, email:', curUser?.email||'none');
     const res=await fetch('/.netlify/functions/grade',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({image:b64,mimeType:mime,prompt,userEmail:curUser?.email||null})
     });
+
+    console.log('doGrade: response status:', res.status);
     const d=await res.json();
+    console.log('doGrade: response body:', JSON.stringify(d).slice(0,200));
+
     if(!res.ok){
       if(d.error==='scan_limit_reached'){
         clearInterval(iv);
-        document.getElementById('loading-w').classList.remove('show');
-        document.getElementById('grade-btn').disabled=false;
+        loadingEl.classList.remove('show');
+        gradeBtn.disabled=false;
         toast('Scan limit reached — upgrade to continue grading');
         return;
       }
       throw new Error(d.error||d.message||'Server error '+res.status);
     }
-    if(d.error)throw new Error(d.error);
-    const p=JSON.parse((d.content||d.text||'').replace(/```json|```/g,'').trim());
+    if(d.error) throw new Error(d.error);
+
+    const rawText = d.content||d.text||'';
+    console.log('doGrade: raw AI text:', rawText.slice(0,200));
+    const p=JSON.parse(rawText.replace(/```json|```/g,'').trim());
+
     clearInterval(iv);
+    loadingEl.classList.remove('show');
     scansUsed++;
     localStorage.setItem('cq-s-'+curUser.email,scansUsed);
-    // Award XP for grading
     checkScanMilestones(curUser.email);
-    // Sync to Supabase
     const resetDate=new Date().toISOString().slice(0,7);
     sbCall('update_scans',{email:curUser.email,scansUsed,scansResetDate:resetDate}).catch(e=>console.warn('Supabase scans:',e));
     updateUsage();
     showResult(p);
+
   }catch(err){
     clearInterval(iv);
-    document.getElementById('loading-w').classList.remove('show');
-    document.getElementById('grade-btn').disabled=false;
-    const msg=err.message||'';
-    if(msg.includes('fetch')||msg.includes('network')||msg.includes('Failed')){
-      toast('Could not reach grading server — check your connection');
-    } else {
-      toast('Grading error: '+msg.slice(0,80));
-    }
+    loadingEl.classList.remove('show');
+    gradeBtn.disabled=false;
+    console.error('doGrade error:', err);
+    const msg=err.message||'Unknown error';
+    toast('Grading error: '+msg.slice(0,80));
   }
-  document.getElementById('loading-w').classList.remove('show');
 }
 
 function gc(n){return n>=9?'#16A34A':n>=7?'#2563EB':n>=5?'#D97706':'#DC2626'}
