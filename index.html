@@ -534,13 +534,13 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
 </style>
 </head>
 <body>
-<div id="pwa-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#FFD700;padding:12px 16px;flex-direction:row;align-items:center;gap:10px;box-shadow:0 -4px 20px rgba(0,0,0,0.4)">
+<div id="pwa-banner" onclick="installPWA()" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#FFD700;padding:12px 16px;flex-direction:row;align-items:center;gap:10px;box-shadow:0 -4px 20px rgba(0,0,0,0.4);cursor:pointer">
   <img src="/icons/icon-72.png" style="width:36px;height:36px;border-radius:8px;flex-shrink:0"/>
   <div style="flex:1">
-    <div style="font-size:13px;font-weight:900;color:#080808">Add CardsQuest to Home Screen</div>
-    <div style="font-size:11px;color:rgba(0,0,0,0.6)">Grade cards instantly from your phone</div>
+    <div style="font-size:13px;font-weight:900;color:#080808">Add to Home Screen — Free</div>
+    <div style="font-size:11px;color:rgba(0,0,0,0.7)">Tap Install → grade any card in seconds</div>
   </div>
-  <button onclick="installPWA()" style="background:#080808;color:#FFD700;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:900;cursor:pointer;white-space:nowrap">Install</button>
+  <button onclick="installPWA()" style="background:#080808;color:#FFD700;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:900;cursor:pointer;white-space:nowrap">⚡ Install Free</button>
   <button onclick="document.getElementById('pwa-banner').style.display='none'" style="background:transparent;border:none;color:rgba(0,0,0,0.5);font-size:20px;cursor:pointer;padding:0 4px;line-height:1">&times;</button>
 </div>
 
@@ -548,13 +548,13 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
     <img src="/icons/icon-72.png" style="width:36px;height:36px;border-radius:8px"/>
     <div style="flex:1">
-      <div style="font-size:13px;font-weight:900;color:#080808">Install CardsQuest</div>
-      <div style="font-size:11px;color:rgba(0,0,0,0.6)">Grade cards instantly from your home screen</div>
+      <div style="font-size:13px;font-weight:900;color:#080808">Add CardsQuest to Home Screen</div>
+      <div style="font-size:11px;color:rgba(0,0,0,0.7)">Tap the Share button below then "Add to Home Screen"</div>
     </div>
     <button onclick="document.getElementById('ios-banner').style.display='none'" style="background:transparent;border:none;color:rgba(0,0,0,0.5);font-size:20px;cursor:pointer;padding:0">&times;</button>
   </div>
   <div style="background:rgba(0,0,0,0.1);border-radius:8px;padding:8px 12px;font-size:12px;color:#080808;line-height:1.6">
-    Tap <strong>Share</strong> (the box with arrow) → then <strong>"Add to Home Screen"</strong>
+    1. Tap the <strong>Share</strong> button (box with arrow ↑)<br/>2. Scroll down and tap <strong>"Add to Home Screen"</strong><br/>3. Tap <strong>Add</strong> — done!
   </div>
 </div>
 
@@ -681,7 +681,7 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
     <div style="position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(7,8,13,0.9)">
       <div>
         <div style="font-family:'Press Start 2P',cursive;font-size:13px;color:#FFD700;-webkit-text-stroke:2px #2B5CE6;paint-order:stroke fill;text-shadow:2px 2px 0 #1A3A9E;letter-spacing:1px">CardsQuest</div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px">AI card grading · Free · Instant</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px">Turn your cards into cash — know their value free</div>
       </div>
       <button onclick="showAuthForms()" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.55);border-radius:8px;padding:7px 14px;font-family:'Outfit',sans-serif;font-weight:700;font-size:12px;cursor:pointer">Login</button>
     </div>
@@ -690,8 +690,8 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
 
       <!-- TRIGGER 1: LOSS AVERSION HEADLINE -->
       <div style="text-align:center;margin-bottom:16px">
-        <div style="font-size:22px;font-weight:900;color:#fff;line-height:1.3;margin-bottom:6px">Don't Submit to PSA<br/><span style="color:#FFD700">Without Knowing Your Grade First</span></div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5">Collectors lose hundreds on bad submissions.<br/>Know your grade in 10 seconds — free.</div>
+        <div style="font-size:22px;font-weight:900;color:#fff;line-height:1.3;margin-bottom:6px">Your Pokémon Cards Could Be Worth<br/><span style="color:#FFD700">More Than You Think</span></div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.45);line-height:1.5">The average PSA 9 sells for 4x the raw price.<br/>Find out what yours is worth in 10 seconds — free.</div>
       </div>
 
       <!-- TRIGGER 2: AUTO-PLAYING DEMO -->
@@ -753,7 +753,7 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         <div id="guest-upload-placeholder">
           <div style="font-size:44px;margin-bottom:10px">&#128247;</div>
           <div style="font-size:20px;font-weight:900;color:#FFD700;margin-bottom:4px">TAP TO UPLOAD YOUR CARD</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:10px">Camera roll or take a photo now</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:10px">Find out what your card is worth</div>
           <div style="display:inline-block;background:#FFD700;color:#080808;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:.8px">FREE · NO SIGNUP · 2 SCANS</div>
         </div>
       </div>
@@ -765,8 +765,8 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
       </div>
 
       <!-- TRIGGER 5: CTA BUTTON -->
-      <button id="guest-grade-btn" onclick="doGuestGrade()" style="width:100%;padding:18px;background:#FFD700;color:#080808;border:none;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:900;font-size:19px;cursor:pointer;transition:.2s;margin-bottom:10px;letter-spacing:.3px" onmouseover="this.style.transform='translateY(-2px)';this.style.background='#FFE033'" onmouseout="this.style.transform='translateY(0)';this.style.background='#FFD700'">&#9889; Grade My Card Free &#8594;</button>
-      <div style="text-align:center;font-size:11px;color:rgba(255,215,0,0.7);font-weight:700;margin-bottom:6px">&#9889; 2 free scans · no signup needed</div>
+      <button id="guest-grade-btn" onclick="doGuestGrade()" style="width:100%;padding:18px;background:#FFD700;color:#080808;border:none;border-radius:14px;font-family:'Outfit',sans-serif;font-weight:900;font-size:19px;cursor:pointer;transition:.2s;margin-bottom:10px;letter-spacing:.3px" onmouseover="this.style.transform='translateY(-2px)';this.style.background='#FFE033'" onmouseout="this.style.transform='translateY(0)';this.style.background='#FFD700'">&#9889; Find Out What My Card Is Worth →</button>
+      <div style="text-align:center;font-size:11px;color:rgba(255,215,0,0.7);font-weight:700;margin-bottom:6px">&#9889; Free · Takes 10 seconds · No signup</div>
 
       <!-- TRIGGER 6: SOCIAL PROOF -->
       <div style="text-align:center;margin-bottom:20px"><div style="font-size:12px;color:rgba(255,215,0,0.7);font-weight:700">⚡ 2 free scans remaining today</div></div>
@@ -3201,7 +3201,7 @@ window.addEventListener('beforeinstallprompt', e => {
   deferredPrompt = e;
   const banner = document.getElementById('pwa-banner');
   if(banner && !localStorage.getItem('pwa-dismissed')) {
-    setTimeout(() => { banner.style.display = 'flex'; }, 3000);
+    setTimeout(() => { banner.style.display = 'flex'; }, 1500);
   }
 });
 
@@ -3225,7 +3225,7 @@ window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
       const b = document.getElementById('ios-banner');
       if(b) b.style.display = 'block';
-    }, 4000);
+    }, 2000);
   }
   document.getElementById('ios-banner')?.querySelector('button')?.addEventListener('click', () => {
     localStorage.setItem('ios-dismissed','1');
