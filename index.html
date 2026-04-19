@@ -818,7 +818,7 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
   <div class="nav-tabs">
     <button class="ntab active" onclick="nav('grade',this)">Grade a Card</button>
     <button class="ntab" onclick="nav('collection',this)">My Collection</button>
-    <button class="ntab" id="ntab-streak" onclick="nav('streak',this)">My Streak</button>
+    <button class="ntab" id="ntab-streak" onclick="nav('streak',this)">⚡ XP &amp; Levels</button>
     <button class="ntab" onclick="nav('pricing',this)">Pricing</button>
   </div>
 
@@ -917,8 +917,20 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
           <p style="font-size:11px;color:var(--ink3);margin-bottom:12px">Searches PokeAPI — loads official artwork, type, weakness, HP, evolution stage. Great for unknown sets.</p>
         </div>
 
-        <!-- Loaded card info banner -->
-        <div class="card-info-banner" id="card-banner">
+        <!-- UPLOAD ZONE — matches landing page style -->
+        <div onclick="document.getElementById('file-in').click()" id="main-upload-zone" style="border:3px solid #FFD700;border-radius:18px;padding:28px 20px;text-align:center;margin-bottom:16px;background:rgba(255,215,0,0.07);cursor:pointer;transition:.2s;animation:pulse-border 1.5s ease-in-out infinite"
+          onmouseover="this.style.background='rgba(255,215,0,0.14)'"
+          onmouseout="this.style.background='rgba(255,215,0,0.07)'">
+          <div id="main-upload-preview" style="display:none;margin-bottom:10px">
+            <img id="art-photo-img-preview" style="max-height:140px;border-radius:10px;border:2px solid rgba(255,215,0,0.4)"/>
+          </div>
+          <div id="main-upload-placeholder">
+            <div style="font-size:44px;margin-bottom:10px">📸</div>
+            <div style="font-size:20px;font-weight:900;color:#FFD700;margin-bottom:4px">TAP TO UPLOAD YOUR CARD</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:10px">Find out what your card is worth</div>
+            <div style="display:inline-block;background:#FFD700;color:#080808;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:.8px">PHOTO OR CAMERA ROLL</div>
+          </div>
+        </div>
           <img class="cib-img" id="cib-img" src="" alt=""/>
           <div class="cib-info">
             <div class="cib-name" id="cib-name">—</div>
@@ -933,13 +945,13 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         </p>
 
         <!-- TIPS -->
-        <div style="background:rgba(255,215,0,0.12);border:1px solid rgba(255,215,0,0.3);border-radius:10px;padding:12px 14px;margin-bottom:16px">
-          <div style="font-size:10px;font-weight:700;color:rgba(255,215,0,0.7);letter-spacing:1px;margin-bottom:8px">💡 Tips for best results</div>
+        <div style="background:rgba(255,215,0,0.18);border:1px solid rgba(184,134,11,0.35);border-radius:10px;padding:12px 14px;margin-bottom:16px">
+          <div style="font-size:10px;font-weight:700;color:#8B6000;letter-spacing:1px;margin-bottom:8px">💡 Tips for best results</div>
           <div style="display:flex;flex-direction:column;gap:5px">
-            <div style="font-size:11px;color:#ffffff;display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Good lighting — no glare or shadows</div>
-            <div style="font-size:11px;color:#ffffff;display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Shoot straight-on to avoid distortion</div>
-            <div style="font-size:11px;color:#ffffff;display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Card should be clear and in focus</div>
-            <div style="font-size:11px;color:#ffffff;display:flex;align-items:flex-start;gap:6px"><span style="color:rgba(255,215,0,0.5);flex-shrink:0">·</span>Remove sleeve if possible for accurate grade</div>
+            <div style="font-size:11px;color:#1a1a1a;display:flex;align-items:flex-start;gap:6px"><span style="color:#B8860B;flex-shrink:0">·</span>Good lighting — no glare or shadows</div>
+            <div style="font-size:11px;color:#1a1a1a;display:flex;align-items:flex-start;gap:6px"><span style="color:#B8860B;flex-shrink:0">·</span>Shoot straight-on to avoid distortion</div>
+            <div style="font-size:11px;color:#1a1a1a;display:flex;align-items:flex-start;gap:6px"><span style="color:#B8860B;flex-shrink:0">·</span>Card should be clear and in focus</div>
+            <div style="font-size:11px;color:#1a1a1a;display:flex;align-items:flex-start;gap:6px"><span style="color:#B8860B;flex-shrink:0">·</span>Remove sleeve if possible for accurate grade</div>
           </div>
         </div>
 
@@ -985,8 +997,104 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
 
   <!-- STREAK -->
   <div id="screen-streak" class="screen">
-    <div class="sh"><h2>My Streak</h2><p>Log in daily to build your streak and unlock collector tiers</p></div>
-    <div id="streak-panel-container"></div>
+    <div class="sh"><h2>⚡ XP &amp; Levels</h2><p>Earn XP by grading cards and logging in daily — level up your collector rank</p></div>
+
+    <!-- XP PROGRESS CARD -->
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+        <div style="width:60px;height:60px;border-radius:16px;background:rgba(255,215,0,0.15);border:2px solid rgba(255,215,0,0.4);display:flex;align-items:center;justify-content:center;font-size:28px" id="xp-badge-icon">⚡</div>
+        <div style="flex:1">
+          <div style="font-size:22px;font-weight:900;color:var(--ink)" id="xp-rank-title">Beginner</div>
+          <div style="font-size:13px;color:var(--ink2)" id="xp-total-display">0 XP total</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:28px;font-weight:900;color:#FFD700" id="xp-big">0</div>
+          <div style="font-size:10px;color:var(--ink3);font-weight:700;letter-spacing:1px">XP</div>
+        </div>
+      </div>
+      <!-- Progress bar to next level -->
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink3);margin-bottom:6px">
+        <span id="xp-level-label">Level 1</span>
+        <span id="xp-next-label">Next: Level 2 at 500 XP</span>
+      </div>
+      <div style="height:8px;background:var(--surf2);border-radius:4px;overflow:hidden;margin-bottom:4px">
+        <div id="xp-progress-bar" style="height:100%;background:linear-gradient(90deg,#C8960C,#FFD700);border-radius:4px;width:0%;transition:width .6s ease"></div>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);text-align:right" id="xp-progress-label">0 / 500 XP</div>
+    </div>
+
+    <!-- HOW TO EARN XP -->
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:22px;margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:14px;letter-spacing:.5px">HOW TO EARN XP</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surf2);border-radius:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:20px">🃏</div>
+            <div><div style="font-size:13px;font-weight:700;color:var(--ink)">Grade a card</div><div style="font-size:11px;color:var(--ink3)">Every scan earns XP</div></div>
+          </div>
+          <div style="background:rgba(255,215,0,0.15);color:#B8860B;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:900">+100 XP</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surf2);border-radius:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:20px">🏆</div>
+            <div><div style="font-size:13px;font-weight:700;color:var(--ink)">Grade 5 cards</div><div style="font-size:11px;color:var(--ink3)">Milestone bonus</div></div>
+          </div>
+          <div style="background:rgba(255,215,0,0.15);color:#B8860B;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:900">+250 XP</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surf2);border-radius:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:20px">💎</div>
+            <div><div style="font-size:13px;font-weight:700;color:var(--ink)">Grade 10 cards</div><div style="font-size:11px;color:var(--ink3)">Power collector bonus</div></div>
+          </div>
+          <div style="background:rgba(255,215,0,0.15);color:#B8860B;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:900">+500 XP</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surf2);border-radius:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="font-size:20px">🔥</div>
+            <div><div style="font-size:13px;font-weight:700;color:var(--ink)">Daily login streak</div><div style="font-size:11px;color:var(--ink3)">Log in every day</div></div>
+          </div>
+          <div style="background:rgba(255,215,0,0.15);color:#B8860B;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:900">+50 XP/day</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEVELS -->
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:22px">
+      <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:14px;letter-spacing:.5px">COLLECTOR LEVELS</div>
+      <div style="display:flex;flex-direction:column;gap:8px" id="xp-levels-list">
+        <div class="xp-level-row" data-xp="0" data-level="1" data-name="Beginner" data-icon="⚡">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:10px"><div style="font-size:18px">⚡</div><div style="font-size:13px;font-weight:700;color:var(--ink)">Beginner</div></div>
+            <div style="font-size:11px;color:var(--ink3)">0 XP</div>
+          </div>
+        </div>
+        <div class="xp-level-row" data-xp="500" data-level="2" data-name="Collector" data-icon="🃏">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:10px"><div style="font-size:18px">🃏</div><div style="font-size:13px;font-weight:700;color:var(--ink)">Collector</div></div>
+            <div style="font-size:11px;color:var(--ink3)">500 XP</div>
+          </div>
+        </div>
+        <div class="xp-level-row" data-xp="1500" data-level="3" data-name="Trainer" data-icon="🏅">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:10px"><div style="font-size:18px">🏅</div><div style="font-size:13px;font-weight:700;color:var(--ink)">Trainer</div></div>
+            <div style="font-size:11px;color:var(--ink3)">1,500 XP</div>
+          </div>
+        </div>
+        <div class="xp-level-row" data-xp="3000" data-level="4" data-name="Elite Grader" data-icon="🏆">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:10px"><div style="font-size:18px">🏆</div><div style="font-size:13px;font-weight:700;color:var(--ink)">Elite Grader</div></div>
+            <div style="font-size:11px;color:var(--ink3)">3,000 XP</div>
+          </div>
+        </div>
+        <div class="xp-level-row" data-xp="6000" data-level="5" data-name="PSA Master" data-icon="💎">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:10px;border:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:10px"><div style="font-size:18px">💎</div><div style="font-size:13px;font-weight:700;color:var(--ink)">PSA Master</div></div>
+            <div style="font-size:11px;color:var(--ink3)">6,000 XP</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="streak-panel-container" style="display:none"></div>
   </div>
 
   <!-- PRICING — 4 tiers -->
