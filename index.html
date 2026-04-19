@@ -2236,7 +2236,26 @@ async function doGuestGrade(){
       throw new Error(d.error || 'Server error ' + res.status);
     }
     if(d.error) throw new Error(d.error);
-    const p = JSON.parse((d.content || d.text || '').replace(/```json|```/g,'').trim());
+
+    // Robust JSON extraction
+    let p;
+    try {
+      const clean = (d.content||d.text||'').replace(/```json|```/g,'').trim();
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if(!jsonMatch) throw new Error('No JSON found');
+      p = JSON.parse(jsonMatch[0]);
+    } catch(e) {
+      throw new Error('AI returned unexpected format — please try again');
+    }
+    p.grade = parseFloat(p.grade)||5;
+    p.confidence = parseInt(p.confidence)||75;
+    p.estimatedValue = parseFloat(p.estimatedValue)||0;
+    p.centering = parseFloat(p.centering)||p.grade;
+    p.corners = parseFloat(p.corners)||p.grade;
+    p.edges = parseFloat(p.edges)||p.grade;
+    p.surface = parseFloat(p.surface)||p.grade;
+    p.gradeLabel = p.gradeLabel||'';
+    p.notes = p.notes||'';
     clearInterval(iv);
     loading.style.display = 'none';
     guestResult = p;
@@ -2649,8 +2668,35 @@ async function doGrade(){
     if(d.error) throw new Error(d.error);
 
     const rawText = d.content||d.text||'';
-    console.log('doGrade: raw AI text:', rawText.slice(0,200));
-    const p=JSON.parse(rawText.replace(/```json|```/g,'').trim());
+    console.log('doGrade: raw AI text:', rawText.slice(0,300));
+
+    // Robust JSON extraction — handles markdown fences, extra text, etc.
+    let p;
+    try {
+      // Try direct parse first
+      const clean = rawText.replace(/```json|```/g,'').trim();
+      // Extract JSON object if buried in text
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if(!jsonMatch) throw new Error('No JSON object found in response');
+      p = JSON.parse(jsonMatch[0]);
+    } catch(parseErr) {
+      console.error('JSON parse failed:', parseErr.message, 'Raw:', rawText.slice(0,200));
+      throw new Error('AI returned unexpected format — please try again');
+    }
+
+    // Validate required fields
+    if(typeof p.grade === 'undefined') throw new Error('AI response missing grade field');
+
+    // Normalise fields with safe fallbacks
+    p.grade = parseFloat(p.grade)||5;
+    p.confidence = parseInt(p.confidence)||75;
+    p.estimatedValue = parseFloat(p.estimatedValue)||0;
+    p.centering = parseFloat(p.centering)||p.grade;
+    p.corners = parseFloat(p.corners)||p.grade;
+    p.edges = parseFloat(p.edges)||p.grade;
+    p.surface = parseFloat(p.surface)||p.grade;
+    p.gradeLabel = p.gradeLabel||'';
+    p.notes = p.notes||'';
 
     clearInterval(iv);
     loadingEl.classList.remove('show');
