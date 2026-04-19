@@ -843,52 +843,11 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
       <span style="margin-left:auto;font-size:10px;color:var(--ink3)">Cache active — results saved for faster lookups</span>
     </div>
 
-    <div class="grade-layout">
-      <!-- POKÉMON CARD -->
-      <div class="app-pcard">
-        <div class="pc-banner"><div class="pc-name" id="d-name">Search a card</div><div class="pc-hp">HP <b id="d-hp">—</b></div></div>
-        <div class="pc-stage"><span class="pc-stage-pill" id="d-stage">Basic</span><span class="pc-stage-sub" id="d-evoline">Search to load data</span></div>
-        <div class="pc-art" id="art-wrap">
-          <!-- Layer 1: default sky/grass background -->
-          <div class="art-bg-layer" id="art-bg"><div class="art-shine"></div><div class="art-emoji" id="art-emoji">🃏</div></div>
-          <!-- Layer 2: Real TCG card scan — contain so full card visible -->
-          <div class="art-img-layer" id="art-tcg-layer" style="display:none">
-            <img id="art-tcg-img" src="" alt="" style="width:100%;height:100%;object-fit:contain;object-position:center"/>
-          </div>
-          <!-- Layer 3: Official PokeAPI artwork — contain on scenic bg -->
-          <div class="art-img-layer" id="art-official-layer" style="display:none;background:linear-gradient(180deg,#8EC5E8 0%,#6AAED8 44%,#5A9E48 44%,#3A7828 100%)">
-            <img id="art-official-img" src="" alt="" style="width:90%;height:90%;object-fit:contain;object-position:center"/>
-          </div>
-          <!-- Layer 4: User uploaded photo -->
-          <div class="art-img-layer" id="art-photo-layer" style="display:none">
-            <img id="art-photo-img" src="" alt="" style="width:100%;height:100%;object-fit:cover"/>
-          </div>
-        </div>
-        <!-- Permanent upload button — always visible, below the art zone -->
-        <div class="art-upload-btn" id="art-upload-btn" onclick="document.getElementById('file-in').click()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-          <span id="art-overlay-txt">📸 Upload your card photo to grade</span>
-        </div>
-        <div class="pc-set-info"><span class="pc-set-name" id="d-set">No set loaded</span><span class="pc-rarity" id="d-rarity">—</span></div>
-        <div class="pc-type-strip"><span class="tbadge" id="d-type" style="background:#383838;color:#D8D8D8;border:1px solid #666">No type</span><span style="color:var(--gold-l);font-size:12px;letter-spacing:2px">◆◆◆</span></div>
-        <div class="pc-move">
-          <div class="pc-move-lbl">PSA Grade Analysis</div>
-          <div class="pc-grade-row"><div class="pc-gnum" id="g-num">—</div><div class="pc-ginfo"><div class="pc-glbl" id="g-lbl">Awaiting scan</div><div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:4px" id="g-desc">Search + upload to grade</div><div class="pc-gval" id="g-val" style="display:none"></div></div></div>
-        </div>
-        <div class="pc-stats" id="stat-box" style="display:none"><div class="pc-move-lbl">Condition Breakdown</div><div id="stat-rows"></div></div>
-        <div class="pc-wr">
-          <div class="pc-wri"><span class="pc-wrl">Weakness</span><span class="pc-wrv" id="d-weak">—</span></div>
-          <div class="pc-wri"><span class="pc-wrl">Resistance</span><span class="pc-wrv" id="d-resist">—</span></div>
-          <div class="pc-wri"><span class="pc-wrl">Retreat</span><span class="pc-wrv" id="d-retreat">⬤⬤</span></div>
-        </div>
-        <div class="pc-footer"><div class="pc-fset" id="d-footer">CardsQuest AI · 2025</div><div id="conf-b" style="font-size:8px;color:rgba(245,197,24,0.5);font-weight:700"></div></div>
-      </div>
-
-      <!-- RIGHT -->
-      <div class="grade-right">
+    <div style="max-width:640px;margin:0 auto">
+      <div style="width:100%">
 
         <!-- Search mode tabs -->
-        <div class="search-tabs">
+        <div class="search-tabs" style="max-width:640px;margin:0 auto">
           <button class="search-tab active" onclick="setSearchMode('tcg',this)" id="tab-tcg">
             🃏 Search by Card (TCG API)
           </button>
@@ -918,34 +877,42 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         </div>
 
         <!-- UPLOAD ZONE — matches landing page style -->
-        <div onclick="document.getElementById('file-in').click()" id="main-upload-zone" style="border:3px solid #FFD700;border-radius:18px;padding:28px 20px;text-align:center;margin-bottom:16px;background:rgba(255,215,0,0.07);cursor:pointer;transition:.2s;animation:pulse-border 1.5s ease-in-out infinite"
+        <div onclick="document.getElementById('file-in').click()" id="main-upload-zone" style="border:3px solid #FFD700;border-radius:20px;padding:40px 24px;text-align:center;margin-bottom:20px;background:rgba(255,215,0,0.07);cursor:pointer;transition:.2s;animation:pulse-border 1.5s ease-in-out infinite;max-width:480px;margin-left:auto;margin-right:auto;display:block"
           onmouseover="this.style.background='rgba(255,215,0,0.14)'"
           onmouseout="this.style.background='rgba(255,215,0,0.07)'">
           <div id="main-upload-preview" style="display:none;margin-bottom:10px">
-            <img id="art-photo-img-preview" style="max-height:140px;border-radius:10px;border:2px solid rgba(255,215,0,0.4)"/>
+            <img id="art-photo-img-preview" style="max-height:160px;border-radius:10px;border:2px solid rgba(255,215,0,0.4)"/>
           </div>
           <div id="main-upload-placeholder">
-            <div style="font-size:44px;margin-bottom:10px">📸</div>
-            <div style="font-size:20px;font-weight:900;color:#FFD700;margin-bottom:4px">TAP TO UPLOAD YOUR CARD</div>
-            <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:10px">Find out what your card is worth</div>
-            <div style="display:inline-block;background:#FFD700;color:#080808;border-radius:20px;padding:5px 14px;font-size:11px;font-weight:900;letter-spacing:.8px">PHOTO OR CAMERA ROLL</div>
-          </div>
-        </div>
-          <img class="cib-img" id="cib-img" src="" alt=""/>
-          <div class="cib-info">
-            <div class="cib-name" id="cib-name">—</div>
-            <div class="cib-sub" id="cib-sub">—</div>
-            <div class="cib-price" id="cib-price"></div>
-            <div class="cib-badges" id="cib-badges"></div>
+            <!-- ANIMATED POKÉBALL SVG -->
+            <div style="margin-bottom:14px;display:flex;justify-content:center">
+              <svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" style="animation:fl 2.5s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(255,215,0,0.5))">
+                <!-- Bottom white half -->
+                <path d="M10,40 A30,30 0 0,0 70,40 Z" fill="#F0F0F0"/>
+                <!-- Top red half -->
+                <path d="M10,40 A30,30 0 0,1 70,40 Z" fill="#E63232"/>
+                <!-- Outer ring -->
+                <circle cx="40" cy="40" r="30" fill="none" stroke="#FFD700" stroke-width="4"/>
+                <!-- Centre band -->
+                <rect x="10" y="36" width="60" height="8" fill="#FFD700"/>
+                <!-- Centre button outer -->
+                <circle cx="40" cy="40" r="10" fill="#F0F0F0" stroke="#FFD700" stroke-width="3"/>
+                <!-- Centre button inner dot -->
+                <circle cx="40" cy="40" r="5" fill="#FFD700"/>
+              </svg>
+            </div>
+            <div style="font-size:20px;font-weight:900;color:#FFD700;margin-bottom:6px">Upload Card</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:12px">Tap to choose from camera roll or take a photo</div>
+            <div style="display:inline-block;background:#FFD700;color:#080808;border-radius:20px;padding:5px 16px;font-size:11px;font-weight:900;letter-spacing:.8px">FREE · INSTANT · AI POWERED</div>
           </div>
         </div>
 
-        <p style="font-size:13px;color:var(--ink3);line-height:1.7;margin-bottom:12px">
-          Search fills the card with real data, then tap the upload button on the card to add your photo for PSA-accurate AI grading.
+        <p style="font-size:13px;color:var(--ink3);line-height:1.7;margin-bottom:12px;max-width:480px;margin-left:auto;margin-right:auto;text-align:center">
+          Upload your card photo for PSA-accurate AI grading in 10 seconds.
         </p>
 
         <!-- TIPS -->
-        <div style="background:rgba(255,215,0,0.18);border:1px solid rgba(184,134,11,0.35);border-radius:10px;padding:12px 14px;margin-bottom:16px">
+        <div style="background:rgba(255,215,0,0.18);border:1px solid rgba(184,134,11,0.35);border-radius:10px;padding:12px 14px;margin-bottom:16px;max-width:480px;margin-left:auto;margin-right:auto">
           <div style="font-size:10px;font-weight:700;color:#8B6000;letter-spacing:1px;margin-bottom:8px">💡 Tips for best results</div>
           <div style="display:flex;flex-direction:column;gap:5px">
             <div style="font-size:11px;color:#1a1a1a;display:flex;align-items:flex-start;gap:6px"><span style="color:#B8860B;flex-shrink:0">·</span>Good lighting — no glare or shadows</div>
@@ -956,7 +923,9 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
         </div>
 
         <!-- BIG ANALYZE BUTTON -->
-        <button class="btn-primary" id="grade-btn" onclick="doGrade()" disabled style="width:100%;padding:16px;font-size:17px;font-weight:900;border-radius:12px;margin-bottom:8px;opacity:0.5;transition:.2s;letter-spacing:.3px">⚡ Analyze &amp; Grade My Card</button>
+        <div style="max-width:480px;margin:0 auto">
+        <button class="btn-primary" id="grade-btn" onclick="doGrade()" disabled style="width:100%;padding:18px;font-size:19px;font-weight:900;border-radius:14px;margin-bottom:8px;opacity:0.5;transition:.2s;letter-spacing:.3px">⚡ Analyze &amp; Grade My Card</button>
+        </div>
         <div style="margin-top:10px;text-align:center">
           <a href="/psa-roi-calculator.html" target="_blank" style="font-size:11px;color:rgba(255,215,0,0.6);text-decoration:none;font-weight:600">📊 Not sure if grading is worth it? Use our free ROI Calculator →</a>
         </div>
@@ -971,6 +940,7 @@ body{font-family:'Outfit',sans-serif;background:#0E0E14;min-height:100vh;color:#
           </div>
         </div>
         <input type="file" id="file-in" accept="image/*" style="display:none" onchange="onFile(event)"/>
+        <div style="display:none"><img id="art-photo-img"/><div id="art-photo-layer"></div><div id="art-tcg-layer"></div><div id="art-official-layer"></div><img id="art-tcg-img"/><img id="art-official-img"/><div id="art-bg"></div><span id="art-emoji"></span><div id="art-upload-btn"></div><span id="art-overlay-txt"></span><span id="d-name"></span><b id="d-hp"></b><span id="d-stage"></span><span id="d-evoline"></span><span id="d-set"></span><span id="d-rarity"></span><span id="d-type"></span><span id="d-weak"></span><span id="d-resist"></span><span id="d-retreat"></span><span id="d-footer"></span><div id="art-wrap"></div></div>
       </div>
     </div>
   </div>
@@ -2046,7 +2016,105 @@ function sanitise(str){
     .replace(/'/g,'&#39;');
 }
 
-// ── LANDING PAGE AUTO-PLAY DEMO ──
+// ── XP SYSTEM ──
+const XP_LEVELS = [
+  {xp:0,    level:1, name:'Beginner',    icon:'⚡'},
+  {xp:500,  level:2, name:'Collector',   icon:'🃏'},
+  {xp:1500, level:3, name:'Trainer',     icon:'🏅'},
+  {xp:3000, level:4, name:'Elite Grader',icon:'🏆'},
+  {xp:6000, level:5, name:'PSA Master',  icon:'💎'},
+];
+
+function getXP(email){ return parseInt(localStorage.getItem('cq-xp-'+(email||'guest'))||'0'); }
+function setXP(email, val){ localStorage.setItem('cq-xp-'+(email||'guest'), val); }
+function getXPLevel(xp){ let l=XP_LEVELS[0]; for(const lvl of XP_LEVELS){ if(xp>=lvl.xp) l=lvl; } return l; }
+function getNextLevel(xp){ return XP_LEVELS.find(l=>l.xp>xp)||null; }
+function getTotalScans(email){ return parseInt(localStorage.getItem('cq-scans-'+(email||'guest'))||'0'); }
+function setTotalScans(email, val){ localStorage.setItem('cq-scans-'+(email||'guest'), val); }
+
+function awardXP(email, amount, reason){
+  const cur = getXP(email);
+  const newXP = cur + amount;
+  setXP(email, newXP);
+  updateXPDisplay(email);
+  // Show XP toast
+  toast('⚡ +'+amount+' XP — '+reason+'!');
+}
+
+function checkScanMilestones(email){
+  const scans = getTotalScans(email) + 1;
+  setTotalScans(email, scans);
+  // Base XP per scan
+  awardXP(email, 100, 'Card graded');
+  // Milestone bonuses
+  if(scans === 5)  setTimeout(()=>awardXP(email, 250, '5 cards milestone'), 1500);
+  if(scans === 10) setTimeout(()=>awardXP(email, 500, '10 cards milestone'), 1500);
+}
+
+function checkDailyLoginXP(email){
+  const today = new Date().toDateString();
+  const lastLogin = localStorage.getItem('cq-lastlogin-'+(email||'guest'));
+  if(lastLogin !== today){
+    localStorage.setItem('cq-lastlogin-'+(email||'guest'), today);
+    if(lastLogin) setTimeout(()=>awardXP(email, 50, 'Daily login streak'), 2000);
+  }
+}
+
+function updateXPDisplay(email){
+  const xp = getXP(email);
+  const level = getXPLevel(xp);
+  const next = getNextLevel(xp);
+
+  // Header chip
+  const xpTotal = document.getElementById('xp-total');
+  const xpRank = document.getElementById('xp-rank');
+  if(xpTotal) xpTotal.textContent = xp.toLocaleString()+' XP';
+  if(xpRank) xpRank.textContent = level.name;
+
+  // XP screen
+  const xpBig = document.getElementById('xp-big');
+  const xpRankTitle = document.getElementById('xp-rank-title');
+  const xpTotalDisplay = document.getElementById('xp-total-display');
+  const xpBadge = document.getElementById('xp-badge-icon');
+  const xpBar = document.getElementById('xp-progress-bar');
+  const xpLevelLabel = document.getElementById('xp-level-label');
+  const xpNextLabel = document.getElementById('xp-next-label');
+  const xpProgressLabel = document.getElementById('xp-progress-label');
+
+  if(xpBig) xpBig.textContent = xp.toLocaleString();
+  if(xpRankTitle) xpRankTitle.textContent = level.name;
+  if(xpTotalDisplay) xpTotalDisplay.textContent = xp.toLocaleString()+' XP total';
+  if(xpBadge) xpBadge.textContent = level.icon;
+  if(xpLevelLabel) xpLevelLabel.textContent = 'Level '+level.level;
+
+  if(next){
+    const progress = ((xp - level.xp) / (next.xp - level.xp)) * 100;
+    if(xpBar) xpBar.style.width = Math.min(progress,100)+'%';
+    if(xpNextLabel) xpNextLabel.textContent = 'Next: '+next.name+' at '+next.xp.toLocaleString()+' XP';
+    if(xpProgressLabel) xpProgressLabel.textContent = (xp-level.xp).toLocaleString()+' / '+(next.xp-level.xp).toLocaleString()+' XP';
+  } else {
+    if(xpBar) xpBar.style.width = '100%';
+    if(xpNextLabel) xpNextLabel.textContent = 'Max level reached!';
+    if(xpProgressLabel) xpProgressLabel.textContent = 'PSA Master';
+  }
+
+  // Highlight current level row
+  document.querySelectorAll('.xp-level-row').forEach(row => {
+    const rowXP = parseInt(row.dataset.xp);
+    const inner = row.querySelector('div');
+    if(rowXP === level.xp){
+      inner.style.background = 'rgba(255,215,0,0.1)';
+      inner.style.borderColor = 'rgba(255,215,0,0.4)';
+    } else if(rowXP > xp){
+      inner.style.opacity = '0.4';
+    } else {
+      inner.style.background = 'rgba(34,197,94,0.06)';
+      inner.style.borderColor = 'rgba(34,197,94,0.2)';
+    }
+  });
+}
+
+// ── END XP SYSTEM ──
 (function(){
   const steps=['Analyzing image...','Checking centering...','Inspecting corners...','Examining surface...','Calculating value...'];
   let pct=0,si=0;
@@ -2330,6 +2398,8 @@ function loginOk(userObj, collection) {
   const nm = userObj.name;
   curUser = { email: em, name: nm };
   scansUsed = userObj.scansUsed || 0;
+  checkDailyLoginXP(userObj.email);
+  setTimeout(()=>updateXPDisplay(userObj.email), 500);
 
   // Store collection in memory
   colls[em] = collection.map(c => ({
@@ -2409,7 +2479,13 @@ function nav(nm,el){document.querySelectorAll('.screen').forEach(s=>s.classList.
 
 /* FILE */
 function onFile(e){const f=e.target.files[0];if(f)loadFile(f)}
-function loadFile(f){curFile=f;const rd=new FileReader();rd.onload=ev=>{curImgSrc=ev.target.result;document.getElementById('art-photo-img').src=curImgSrc;document.getElementById('art-photo-layer').style.display='flex';document.getElementById('art-overlay-txt').textContent='📸 Change photo';const gb=document.getElementById('grade-btn');gb.disabled=false;gb.style.opacity='1';gb.textContent='⚡ Analyze & Grade My Card';resetGradeResult()};rd.readAsDataURL(f)}
+function loadFile(f){curFile=f;const rd=new FileReader();rd.onload=ev=>{curImgSrc=ev.target.result;document.getElementById('art-photo-img').src=curImgSrc;document.getElementById('art-photo-layer').style.display='flex';document.getElementById('art-overlay-txt').textContent='📸 Change photo';const gb=document.getElementById('grade-btn');gb.disabled=false;gb.style.opacity='1';gb.textContent='⚡ Analyze & Grade My Card';
+  // Update new upload zone preview
+  const prev=document.getElementById('main-upload-preview');
+  const placeholder=document.getElementById('main-upload-placeholder');
+  const prevImg=document.getElementById('art-photo-img-preview');
+  if(prev&&placeholder&&prevImg){prevImg.src=curImgSrc;prev.style.display='block';placeholder.style.display='none';}
+  resetGradeResult()};rd.readAsDataURL(f)}
 
 function resetGradeResult(){document.getElementById('g-num').textContent='—';document.getElementById('g-lbl').textContent='Ready to analyze';document.getElementById('g-desc').textContent='Click Analyze & Grade';document.getElementById('g-val').style.display='none';document.getElementById('stat-box').style.display='none';document.getElementById('notes-area').innerHTML='';document.getElementById('save-area').style.display='none';document.getElementById('conf-b').textContent='';curResult=null}
 
@@ -2514,6 +2590,8 @@ async function doGrade(){
     clearInterval(iv);
     scansUsed++;
     localStorage.setItem('cq-s-'+curUser.email,scansUsed);
+    // Award XP for grading
+    checkScanMilestones(curUser.email);
     // Sync to Supabase
     const resetDate=new Date().toISOString().slice(0,7);
     sbCall('update_scans',{email:curUser.email,scansUsed,scansResetDate:resetDate}).catch(e=>console.warn('Supabase scans:',e));
